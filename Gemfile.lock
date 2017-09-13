@@ -1,0 +1,25 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    clamp (1.1.2)
+    colorize (0.8.1)
+    faker (1.8.4)
+      i18n (~> 0.5)
+    highline (1.7.8)
+    i18n (0.8.6)
+    mixlib-shellout (2.3.2)
+    trollop (2.1.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  clamp
+  colorize
+  faker
+  highline
+  mixlib-shellout
+  trollop
+
+BUNDLED WITH
+   1.15.1

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash -x
+# encoding: utf-8
+# Usage: ticket update
+# Summary: Updates to the latest ticket command version
+
+# Put the rest of the update command here
+cd $_TICKET_ROOT
+git pull
+ticket shave

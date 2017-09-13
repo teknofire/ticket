@@ -1,0 +1,120 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket open
+# Summary: Describe open command here
+# Provide ticket completions
+
+$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+
+require 'clamp'
+require 'json'
+require 'colorize'
+require 'fileutils'
+require 'helpers/ticket_info'
+
+class OpenCommand < Clamp::Command
+  include TicketInfo
+  attr_accessor :ticket
+
+  option '--complete', :flag, 'autocomplete output', hidden: true
+  option '--[no-]shell', :flag, 'Skip launching new shell for ticket', default: true
+  option '--[no-]clipboard', :flag, 'Skip adding working path to clipboard', default: true
+  option '--[no-]browser', :flag, 'Skip opening ticket in browser', default: true
+
+  parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
+
+  def execute
+    return autocomplete if complete?
+
+    if ticket_id
+      load_ticket(id: ticket_id)
+    elsif find_local_ticket_info
+      load_ticket(file: find_local_ticket_info)
+    else
+      signal_usage_error "Unable to find ticket #{ticket_id.red}"
+    end
+
+    launch_browser
+    launch_shell
+  end
+
+  def autocomplete
+    opts = all_ticket_ids
+    # opts = %w{ --verbose }
+
+    puts opts.join("\n") unless opts.empty?
+    exit
+  end
+
+  def load_ticket(opts = {})
+    if opts[:id]
+      filename = ticket_info_path(opts[:id])
+    elsif opts[:file]
+      filename = opts[:file]
+    else
+      raise "Did not specify an :id or :file to load"
+    end
+    @ticket = read_ticket_info(filename)
+    update_ticket_links(File.dirname(filename))
+  end
+
+  def update_ticket_links(path)
+    return unless File.directory?(path)
+    FileUtils.ln_sf(path, linked_ticket_path)
+  end
+
+  def read_ticket_info(filename)
+    return unless File.exists?(filename)
+    JSON.parse(File.read(filename))
+  end
+
+  def find_local_ticket_info
+    %w{ ticket.info ../ticket.info }.each do |file|
+      return file if File.exists?(file)
+    end
+    return nil
+  end
+
+  def ticket_info_path(id)
+    path = File.join(linked_ticket_path, id, 'ticket.info')
+    if File.exists?(path)
+      File.realpath(path)
+    else
+      path
+    end
+  end
+
+  def linked_ticket_path
+    File.join(root, '.tickets')
+  end
+
+  def ticket_url
+    "https://getchef.zendesk.com/agent/tickets/#{ticket['id']}"
+  end
+
+  def ticket_path
+    File.dirname(ticket_info_path(ticket['id']))
+  end
+
+  def launch_browser
+    return unless browser?
+
+    puts "Opening #{ticket_url.green}"
+    system "open #{ticket_url}"
+  end
+
+  def launch_shell
+    # skip if user didn't request new shell
+    return unless shell?
+    # skip if we are already somewhere in the ticket_path
+    return if Dir.pwd.match?(ticket_path)
+
+    puts "Launching new #{File.basename(ENV['SHELL']).green} shell in #{ticket_path.green}"
+    puts "Press [CTRL-D] to exit".red
+
+    Dir.chdir ticket_path
+    exec ENV['SHELL']
+  end
+end
+
+OpenCommand.run

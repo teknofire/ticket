@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket newcmd <command name>
+# Summary: Create a new ticket command
+
+require 'trollop'
+require 'colorize'
+require 'colorized_string'
+require 'erb'
+require 'fileutils'
+
+opts = Trollop::options do
+  opt :type, 'Create new ruby command', default: 'ruby'
+  opt 'dont-open', "Don\'t open the new command in #{ENV['EDITOR'] || 'no editor defined'}"
+  opt :complete
+end
+
+# Provide ticket completions
+if opts[:complete]
+  puts '--type'
+  puts '--dont-open'
+  puts '--help'
+  exit
+end
+
+class CmdTemplate
+  def initialize(name, template)
+    @name = name
+    @template = template
+  end
+
+  def build(output_filename)
+    erb = ERB.new(File.read(@template))
+    erb.result(binding)
+  end
+end
+
+name = ARGV.shift
+template = File.join(ENV['_TICKET_ROOT'], 'share/ticket/cmd_templates', "#{opts[:type]}_command.erb")
+
+unless File.exists?(template)
+  puts "» Unknown command type: #{opts[:type]}".red
+  exit 1
+end
+
+output = File.join(ENV['_TICKET_ROOT'], 'libexec', "ticket-#{name}")
+
+if File.exists?(output)
+  puts "» Error: #{name} command already exists".red
+  exit 1
+end
+
+cmd = CmdTemplate.new(name, template)
+File.open(output, 'w') do |fp|
+  fp << cmd.build(output)
+end
+FileUtils.chmod 0755, output
+
+unless opts['dont-open']
+  system([ENV['EDITOR'], output].join(' '))
+end

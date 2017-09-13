@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket list
+# Summary: Describe list command here
+# Provide ticket completions
+
+$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+
+require 'clamp'
+require 'colorize'
+require 'helpers/ticket_info'
+
+class ListCommand < Clamp::Command
+  include TicketInfo
+
+  option '--complete', :flag, 'autocomplete output', hidden: true
+
+  parameter '[CLIENT]', 'client name', :attribute_name => :client
+
+  def execute
+    return autocomplete if complete?
+
+    if client
+      puts "Listing known client names".green
+      puts ticket_ids(client).join("\n")
+    else
+      puts "Listing known client names".green
+      puts client_list.join("\n")
+    end
+
+    # example usage
+    # unless File.exists?(file)
+    #   signal_usage_error "file doesn't exist"
+    # end
+
+    # Put the rest of the list command here
+  end
+
+  def autocomplete
+    puts client_list.join("\n")
+    exit
+  end
+end
+
+ListCommand.run

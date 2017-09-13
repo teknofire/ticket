@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket new
+# Summary: Create new workspace for a ticket
+# Provide ticket completions
+
+$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+
+require 'clamp'
+require 'fileutils'
+require 'json'
+
+require 'helpers/ticket_info'
+
+class NewCommand < Clamp::Command
+  include TicketInfo
+
+  option '--complete', :flag, 'autocomplete output', hidden: true
+  option '--[no-]open', :flag, 'Open ticket after workspace is created', default: true
+
+  parameter '[CLIENT]', 'client name', :attribute_name => :client
+  parameter '[TICKET_ID]', 'ticket id', :attribute_name => :ticket_id
+
+  def execute
+    return autocomplete if complete?
+
+    signal_usage_error "Please provide a client name".red unless client
+    signal_usage_error "Please provide a ticket id".red unless ticket_id
+
+    ticket_info_file = full_ticket_info_path(client, ticket_id)
+    ticket_info_path = File.dirname(ticket_info_file)
+
+    FileUtils.mkdir_p(ticket_info_path)
+    FileUtils.ln_sf(ticket_info_path, linked_ticket_path)
+
+    File.open(ticket_info_file, 'w') do |fp|
+      fp << JSON.pretty_generate({ id: ticket_id, client: client })
+    end
+
+    system("ticket open #{ticket_id}") if open?
+  end
+
+  def autocomplete
+    opts = client_list
+    puts opts.join("\n")
+    exit
+  end
+end
+
+NewCommand.run
