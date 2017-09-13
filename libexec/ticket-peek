@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 # Usage: ticket peek
-# Summary: Describe peek command here
+# Summary: Open browser window for to zendesk ticket
 # Provide ticket completions
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')

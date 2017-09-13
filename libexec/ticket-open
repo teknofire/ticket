@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 # Usage: ticket open
-# Summary: Describe open command here
+# Summary: Open a ticket in browser and terminal shell
 # Provide ticket completions
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
