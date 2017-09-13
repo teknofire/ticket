@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 # Usage: ticket list
-# Summary: Describe list command here
+# Summary: List clients or tickets for clients if client is given
 # Provide ticket completions
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
