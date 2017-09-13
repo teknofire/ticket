@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket delete
+# Summary: Delete local info for given ticket id
+# Provide ticket completions
+
+$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+
+require 'clamp'
+require 'colorize'
+require 'highline'
+require 'fileutils'
+require 'helpers/ticket_info'
+
+class DeleteCommand < Clamp::Command
+  include TicketInfo
+  attr_accessor :ticket
+
+  option '--complete', :flag, 'autocomplete output', hidden: true
+  option ['-y', '--yes'], :flag, 'Confirm all questions with yes'
+
+  parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
+
+  def execute
+    return autocomplete if complete?
+
+
+    if ticket_id.nil?
+      signal_usage_error "Please specify a ticket_id to delete"
+    end
+
+    ticket_path = File.dirname(ticket_info_path(ticket_id))
+
+    unless File.directory?(ticket_path)
+      signal_usage_error "#{ticket_path} does not exist or is not a directory"
+    end
+
+    cli = HighLine.new
+    if yes? || cli.agree("Are you sure you want to delete #{ticket_path} [y/n]? ".red)
+      puts "Deleting #{ticket_path.green}"
+      FileUtils.rm_rf ticket_path
+
+      # clean up symlink
+      symlink = File.join(linked_ticket_path, ticket_id)
+      FileUtils.rm symlink if File.symlink?(symlink)
+    else
+      puts "Skipping delete of #{ticket_path}".yellow
+    end
+  end
+
+  def autocomplete
+    opts = all_ticket_ids
+
+    puts opts.join("\n")
+    exit
+  end
+end
+
+DeleteCommand.run

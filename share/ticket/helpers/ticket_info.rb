@@ -1,3 +1,5 @@
+require 'json'
+
 module TicketInfo
   def root
     ENV['TICKET_ROOT'] || File.join(ENV['HOME'], 'support')

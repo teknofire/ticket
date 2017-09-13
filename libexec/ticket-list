@@ -14,17 +14,22 @@ class ListCommand < Clamp::Command
   include TicketInfo
 
   option '--complete', :flag, 'autocomplete output', hidden: true
+  option '--ids', :flag, 'list just ticket ids'
+  option ['-q', '--quiet'], :flag, 'less verbose output'
 
   parameter '[CLIENT]', 'client name', :attribute_name => :client
 
   def execute
     return autocomplete if complete?
 
-    if client
-      puts "Listing known client names".green
+    if ids?
+      puts "Listing all ticket ids".green unless quiet?
+      puts all_ticket_ids.join("\n")
+    elsif client
+      puts "Listing known client names".green unless quiet?
       puts ticket_ids(client).join("\n")
     else
-      puts "Listing known client names".green
+      puts "Listing known client names".green unless quiet?
       puts client_list.join("\n")
     end
 
