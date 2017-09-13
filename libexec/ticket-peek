@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
-# Usage: ticket <%= @name %>
-# Summary: Describe <%= @name %> command here
+# Usage: ticket peek
+# Summary: Describe peek command here
 # Provide ticket completions
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
@@ -9,30 +9,24 @@ $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 require 'clamp'
 require 'helpers/ticket_info'
 
-class <%= @name.capitalize %>Command < Clamp::Command
+class PeekCommand < Clamp::Command
   include TicketInfo
 
   option '--complete', :flag, 'autocomplete output', hidden: true
-
   parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
 
   def execute
     return autocomplete if complete?
 
-    # example usage
-    # unless File.exists?(file)
-    #   signal_usage_error "file doesn't exist"
-    # end
-
-    # Put the rest of the <%= @name %> command here
+    exec "ticket open --no-shell #{ticket_id}"
   end
 
   def autocomplete
-    opts = %w{ --help }
+    opts = all_ticket_ids
 
     puts opts.join("\n")
     exit
   end
 end
 
-<%= @name.capitalize %>Command.run
+PeekCommand.run

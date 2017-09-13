@@ -18,7 +18,6 @@ class OpenCommand < Clamp::Command
 
   option '--complete', :flag, 'autocomplete output', hidden: true
   option '--[no-]shell', :flag, 'Skip launching new shell for ticket', default: true
-  option '--[no-]clipboard', :flag, 'Skip adding working path to clipboard', default: true
   option '--[no-]browser', :flag, 'Skip opening ticket in browser', default: true
 
   parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
