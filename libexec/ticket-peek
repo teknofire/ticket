@@ -18,7 +18,11 @@ class PeekCommand < Clamp::Command
   def execute
     return autocomplete if complete?
 
-    exec "ticket open --no-shell #{ticket_id}"
+    exec "open #{ticket_url}"
+  end
+
+  def ticket_url
+    "https://getchef.zendesk.com/agent/tickets/#{ticket_id}"
   end
 
   def autocomplete
