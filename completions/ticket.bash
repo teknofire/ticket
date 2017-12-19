@@ -6,7 +6,7 @@ _ticket() {
     COMPREPLY=( $(compgen -W "$(ticket commands)" -- "$word") )
   else
     local command="${COMP_WORDS[1]}"
-    local completions="$(ticket completions "$command")"
+    local completions="$(ticket completions "$command" $@)"
     COMPREPLY=( $(compgen -W "$completions" -- "$word") )
   fi
 }

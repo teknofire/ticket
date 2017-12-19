@@ -8,11 +8,10 @@ _ticket() {
   local word words completions
   read -cA words
   word="${words[2]}"
-
   if [ "${#words}" -eq 2 ]; then
     completions="$(ticket commands)"
   else
-    completions="$(ticket completions "${word}")"
+    completions="$(ticket completions "${word}" ${words[3,-1]})"
   fi
 
   reply=("${(ps:\n:)completions}")
