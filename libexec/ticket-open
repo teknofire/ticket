@@ -3,6 +3,7 @@
 # Usage: ticket open
 # Summary: Open a ticket in browser and terminal shell
 # Provide ticket completions
+# Built-in help
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 

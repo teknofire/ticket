@@ -3,6 +3,7 @@
 # Usage: ticket delete
 # Summary: Delete local info for given ticket id
 # Provide ticket completions
+# Built-in help
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 

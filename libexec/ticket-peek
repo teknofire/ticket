@@ -3,6 +3,7 @@
 # Usage: ticket peek
 # Summary: Open browser window for to zendesk ticket
 # Provide ticket completions
+# Built-in help
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 

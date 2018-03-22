@@ -2,6 +2,7 @@
 # encoding: utf-8
 # Usage: ticket newcmd <command name>
 # Summary: Create a new ticket command
+# Built-in help
 
 require 'trollop'
 require 'colorize'

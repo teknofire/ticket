@@ -31,8 +31,15 @@ print_summaries() {
       "$(truncate "$summary_length" "${summaries[$index]}")"
   done
 }
-
 print_help() {
+  if grep -i "^# built-in help" "$(command_path)" >/dev/null; then
+    exec "$(command_path)" --help
+  else
+    old_print_help $1
+  fi
+}
+
+old_print_help() {
   local file="$1"
   local usage="$(usage "$file")"
 
@@ -73,7 +80,7 @@ truncate() {
     echo "$string"
   fi
 }
-
+ 
 # Provide ticket completions
 if [ "$1" = "--complete" ]; then
   exec "ticket-commands"
