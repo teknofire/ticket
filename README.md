@@ -40,3 +40,7 @@ You can also install the command into a different directory, say `$HOME/projects
 The tool should be mostly self documenting, to see all the available commands run: `ticket help`
 
 Then to see more specific help about a command run: `ticket help SUBCOMMAND`
+
+## Updates
+
+Once the `ticket` command is available on your system you can update it by running `ticket update`.  This will pull down the latest changes from GitHub and runs the `bundle`.
