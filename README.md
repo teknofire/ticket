@@ -4,6 +4,10 @@ This is a quick and dirty tool to handle some support ticket management tasks.  
 
 This command is built using: https://github.com/basecamp/sub
 
+## Requirements
+
+* ruby 2+
+
 ## Install ticket command
 
 Here's how to install the tool into your $HOME directory:
@@ -11,6 +15,8 @@ Here's how to install the tool into your $HOME directory:
 ```
 cd
 git clone https://github.com/teknofire/ticket.git .ticket
+cd .ticket
+bundle
 ```
 
 For bash users:
@@ -32,3 +38,5 @@ You can also install the command into a different directory, say `$HOME/projects
 ## Available commands
 
 The tool should be mostly self documenting, to see all the available commands run: `ticket help`
+
+Then to see more specific help about a command run: `ticket help SUBCOMMAND`
