@@ -42,8 +42,12 @@ module TicketInfo
     end
   end
 
-  def linked_ticket_path
-    File.join(root, '.tickets')
+  def linked_ticket_path(ticket_id = nil)
+    params = [root, '.tickets']
+    FileUtils.mkdir_p File.join(params)
+
+    params << ticket_id if ticket_id
+    File.join(params)
   end
 
   def ticket_url

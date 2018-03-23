@@ -32,7 +32,7 @@ class NewCommand < Clamp::Command
     ticket_info_path = File.dirname(ticket_info_file)
 
     FileUtils.mkdir_p(ticket_info_path)
-    FileUtils.ln_sf(ticket_info_path, linked_ticket_path)
+    FileUtils.ln_sf(ticket_info_path, linked_ticket_path(ticket_id))
 
     File.open(ticket_info_file, 'w') do |fp|
       fp << JSON.pretty_generate({ id: ticket_id, client: client })
