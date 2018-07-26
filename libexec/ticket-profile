@@ -3,6 +3,7 @@
 # Usage: ticket profile
 # Summary: Returns req/sec for the given log file
 # Provide ticket completions
+# main code handling lifted from support-docs repo
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 
@@ -38,13 +39,17 @@ class ProfileCommand < Clamp::Command
       granularity = :second
     end
 
+    # dup this so we don't get wierd side effects later on
+    log_filter = filter.dup
     requests = Hash.new { |hash, key| hash[key] = 0 }
     # puts log_type.inspect
     case log_type
     when 'solr', 'expander'
       time_match = /^(.+?)\.\d+\s/
       time_divider = '_'
-      filter = 'indexed' if log_type == 'expander'
+      if log_filter.nil? && log_type == 'expander'
+        log_filter = 'indexed'
+      end
     when 'erchef_requests'
       time_match = /^(.+?)Z /
       time_divider = 'T'
@@ -60,7 +65,7 @@ class ProfileCommand < Clamp::Command
 
     File.open(file, 'r') do |fp|
       fp.each do |line|
-        next unless filter.nil? || line.match?(/#{filter}/)
+        next unless log_filter.nil? || line.match?(/#{log_filter}/)
         results = line.match(time_match)
 
         next if results.nil?
