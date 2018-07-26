@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 # Usage: ticket profile
-# Summary: Describe profile command here
+# Summary: Returns req/sec for the given log file
 # Provide ticket completions
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
@@ -16,7 +16,8 @@ class ProfileCommand < Clamp::Command
   LOG_TYPES = %w{ solr expander nginx erchef_requests }
 
   option '--complete', :flag, 'autocomplete output', hidden: true
-  option ['-m', '--minute'], :flag, 'minute granularity'
+  option ['-m', '--minute'], :flag, 'show requests/minute'
+  option ['-M', '--avg-minute'], :flag, 'show avg requests/second for each minute window'
   option ['-f', '--filter'], 'filter', 'filter results using', attribute_name: :filter
   option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
     unless complete?
@@ -31,6 +32,8 @@ class ProfileCommand < Clamp::Command
 
     if minute?
       granularity = :minute
+    elsif avg_minute?
+      granularity = :second_avg
     else
       granularity = :second
     end
@@ -53,6 +56,8 @@ class ProfileCommand < Clamp::Command
       time_divider = '_'
     end
 
+    signal_usage_error "Please specify a file to profile" if file.nil?
+
     File.open(file, 'r') do |fp|
       fp.each do |line|
         next unless filter.nil? || line.match?(/#{filter}/)
@@ -63,13 +68,13 @@ class ProfileCommand < Clamp::Command
       end
     end
 
-    if minute?
+    if avg_minute?
       requests.update(requests) do |date, requests_per_minute|
         (requests_per_minute / 60.0).round
       end
     end
 
-    print_chart requests
+    print_chart requests, granularity
   end
 
   def autocomplete
@@ -91,7 +96,7 @@ class ProfileCommand < Clamp::Command
     d = date.sub(time_divider, ' ')
 
     case granularity
-    when :minute
+    when :minute, :second_avg
       results = d.match(/(.+):\d\d/)
       d = results[1] unless results.nil?
     end
@@ -99,7 +104,7 @@ class ProfileCommand < Clamp::Command
     d
   end
 
-  def print_chart(requests)
+  def print_chart(requests, granularity)
     largest_requests_per_second = requests.values.max
     timestamps = requests.keys.sort do |a, b|
       begin
@@ -110,7 +115,7 @@ class ProfileCommand < Clamp::Command
     end
     timestamps.each do |timestamp|
       requests_per_second = requests[timestamp]
-      printf "%s %5d r/s [%-100s]\n", timestamp, requests_per_second,
+      printf "%s %5d r/#{granularity[0]} [%-100s]\n", timestamp, requests_per_second,
              '#' * (requests_per_second * 100 / largest_requests_per_second)
     end
   end
