@@ -27,7 +27,7 @@ shopt -s nullglob
     for command in "${path}/ticket-"*; do
       command="${command##*ticket-}"
       if [ -n "$sh" ]; then
-        if [ ${command:0:3} = "sh-" ]; then
+        if [[ ${command:0:3} == "sh-" ]]; then
           echo ${command##sh-}
         fi
       elif [ -n "$nosh" ]; then

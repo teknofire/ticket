@@ -1,0 +1,119 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket profile
+# Summary: Describe profile command here
+# Provide ticket completions
+
+$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+
+require 'clamp'
+require 'helpers/ticket_info'
+require 'date'
+
+class ProfileCommand < Clamp::Command
+  include TicketInfo
+
+  LOG_TYPES = %w{ solr expander nginx erchef_requests }
+
+  option '--complete', :flag, 'autocomplete output', hidden: true
+  option ['-m', '--minute'], :flag, 'minute granularity'
+  option ['-f', '--filter'], 'filter', 'filter results using', attribute_name: :filter
+  option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
+    unless complete?
+      raise ArgumentError.new("Invalid log type specified '#{s}'") unless s.nil? or LOG_TYPES.include?(s)
+    end
+    s
+  end
+  parameter '[FILE]', 'file', :attribute_name => :file
+
+  def execute
+    return autocomplete if complete?
+
+    if minute?
+      granularity = :minute
+    else
+      granularity = :second
+    end
+
+    requests = Hash.new { |hash, key| hash[key] = 0 }
+    # puts log_type.inspect
+    case log_type
+    when 'solr', 'expander'
+      time_match = /^(.+?)\.\d+\s/
+      time_divider = '_'
+      filter = 'indexed' if log_type == 'expander'
+    when 'erchef_requests'
+      time_match = /^(.+?)Z /
+      time_divider = 'T'
+    when 'nginx'
+      time_match = /\[(.+?)\]/
+      time_divider = ':'
+    else
+      time_match = /^(.+?)\.\d+\s/
+      time_divider = '_'
+    end
+
+    File.open(file, 'r') do |fp|
+      fp.each do |line|
+        next unless filter.nil? || line.match?(/#{filter}/)
+        results = line.match(time_match)
+
+        next if results.nil?
+        requests[date_glob(results[1], time_divider, granularity)] += 1
+      end
+    end
+
+    if minute?
+      requests.update(requests) do |date, requests_per_minute|
+        (requests_per_minute / 60.0).round
+      end
+    end
+
+    print_chart requests
+  end
+
+  def autocomplete
+    lastargs = [ARGV.last, ARGV[-2]]
+    if (lastargs.include?('-t') || lastargs.include?('--type')) && !LOG_TYPES.include?(ARGV.last)
+      opts = LOG_TYPES.dup
+    else
+      opts = %w{ --filter }
+      opts += Dir.glob('*')
+    end
+    opts -= ARGV
+    print opts.join("\n")
+    exit
+  end
+
+  private
+
+  def date_glob(date, time_divider, granularity)
+    d = date.sub(time_divider, ' ')
+
+    case granularity
+    when :minute
+      results = d.match(/(.+):\d\d/)
+      d = results[1] unless results.nil?
+    end
+
+    d
+  end
+
+  def print_chart(requests)
+    largest_requests_per_second = requests.values.max
+    timestamps = requests.keys.sort do |a, b|
+      begin
+        DateTime.parse(a) <=> DateTime.parse(b)
+      rescue
+        raise "Invalid date: #{a} or #{b}"
+      end
+    end
+    timestamps.each do |timestamp|
+      requests_per_second = requests[timestamp]
+      printf "%s %5d r/s [%-100s]\n", timestamp, requests_per_second,
+             '#' * (requests_per_second * 100 / largest_requests_per_second)
+    end
+  end
+end
+
+ProfileCommand.run
