@@ -7,6 +7,7 @@ This command is built using: https://github.com/basecamp/sub
 ## Requirements
 
 * ruby 2+
+* jq (for the `ticket profile` command)
 
 ## Install ticket command
 
