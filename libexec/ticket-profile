@@ -10,16 +10,24 @@ $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 require 'clamp'
 require 'helpers/ticket_info'
 require 'date'
+require 'mixlib/shellout'
+require 'descriptive-statistics'
 
 class ProfileCommand < Clamp::Command
   include TicketInfo
 
-  LOG_TYPES = %w{ solr expander nginx erchef_requests }
+  LOG_TYPES = %w{ solr expander nginx erchef_requests rabbitmq_overview }
 
   option '--complete', :flag, 'autocomplete output', hidden: true
   option ['-m', '--minute'], :flag, 'show requests/minute'
   option ['-M', '--avg-minute'], :flag, 'show avg requests/second for each minute window'
   option ['-f', '--filter'], 'filter', 'filter results using', attribute_name: :filter
+  option ['-j', '--jq-value'], 'jq_value', 'pull values from json data', attribute_name: :jq_value
+  option ['-a', '--accumulator'], :flag, 'values accumulate'
+  option ['-s', '--summary'], :flag, 'print statistics at the end'
+  option ['-u', '--unit_time'], 'unit_time', 'per unit of time value to use', default: 1, attribute_name: :unit_time do |s|
+    Integer(s)
+  end
   option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
     unless complete?
       raise ArgumentError.new("Invalid log type specified '#{s}'") unless s.nil? or LOG_TYPES.include?(s)
@@ -31,55 +39,104 @@ class ProfileCommand < Clamp::Command
   def execute
     return autocomplete if complete?
 
+
     if minute?
       granularity = :minute
+      units_label = 'r/m'
     elsif avg_minute?
       granularity = :second_avg
+      units_label = 'avg r/s'
+      units = 60
     else
       granularity = :second
+      units_label = 'r/s'
     end
+    units ||= unit_time.dup
 
     # dup this so we don't get wierd side effects later on
+    previous_accumulator_value = nil
     log_filter = filter.dup
     requests = Hash.new { |hash, key| hash[key] = 0 }
     # puts log_type.inspect
     case log_type
     when 'solr', 'expander'
-      time_match = /^(.+?)\.\d+\s/
+      time_match = '^(.+?)\.\d+\s'
       time_divider = '_'
       if log_filter.nil? && log_type == 'expander'
         log_filter = 'indexed'
       end
     when 'erchef_requests'
-      time_match = /^(.+?)Z /
+      time_match = '^(.+?)Z\s*(.+)'
       time_divider = 'T'
     when 'nginx'
-      time_match = /\[(.+?)\]/
+      time_match = '\[(.+?)\]\s*(.+)'
       time_divider = ':'
+    when 'rabbitmq_overview'
+      time_match = '\[(.+?)-\d+:\d+\]\s+(.+)'
+      time_divider = nil
+      if accumulator?
+        units_label = 'Δ msgs'
+      else
+        units_label = 'msgs'
+      end
+      units_label += '/s' if units > 1
     else
-      time_match = /^(.+?)\.\d+\s/
+      time_match = '^(.+?)\.\d+\s*(.+)'
       time_divider = '_'
     end
 
     signal_usage_error "Please specify a file to profile" if file.nil?
-
+    time_regexp = Regexp.new(time_match)
+    leftover_regexp = Regexp.new("#{time_match}(.+)")
     File.open(file, 'r') do |fp|
       fp.each do |line|
         next unless log_filter.nil? || line.match?(/#{log_filter}/)
-        results = line.match(time_match)
+        results = line.match(time_regexp)
 
-        next if results.nil?
-        requests[date_glob(results[1], time_divider, granularity)] += 1
+        value = if jq_value.nil?
+          1
+        else
+          json = results[2]
+          cmd = "echo '#{json}' | jq -r '#{jq_value}'"
+          shellout = Mixlib::ShellOut.new(*cmd)
+          shellout.run_command
+          shellout.stdout.to_i
+        end
+
+        if accumulator?
+          # if previous value is nil we need to initialize it
+          # so the first row isn't a huge jump
+          previous_accumulator_value = value if previous_accumulator_value.nil?
+
+          saved_value = value
+
+          value -= previous_accumulator_value
+
+          # update the prev accumulator value
+          previous_accumulator_value = saved_value
+        end
+
+        requests[date_glob(results[1], time_divider, granularity)] += value
       end
     end
 
-    if avg_minute?
+    if units > 1
       requests.update(requests) do |date, requests_per_minute|
-        (requests_per_minute / 60.0).round
+        (requests_per_minute / units.to_f).round
       end
     end
 
-    print_chart requests, granularity
+    print_chart requests, granularity, units_label
+
+    if summary?
+      stats = DescriptiveStatistics::Stats.new(requests.values)
+      puts '-' * 80
+      puts "Min value: #{stats.min}"
+      puts "Max value: #{stats.max}"
+      puts "Standard Deviation: #{stats.standard_deviation}"
+      puts "90th percentile: #{stats.value_from_percentile(90)}"
+      puts '-' * 80
+    end
   end
 
   def autocomplete
@@ -98,7 +155,8 @@ class ProfileCommand < Clamp::Command
   private
 
   def date_glob(date, time_divider, granularity)
-    d = date.sub(time_divider, ' ')
+
+    d = time_divider.nil? ? date : date.sub(time_divider, ' ')
 
     case granularity
     when :minute, :second_avg
@@ -109,8 +167,8 @@ class ProfileCommand < Clamp::Command
     d
   end
 
-  def print_chart(requests, granularity)
-    largest_requests_per_second = requests.values.max
+  def print_chart(requests, granularity, units_label)
+    largest_requests_per_unit = requests.values.max
     timestamps = requests.keys.sort do |a, b|
       begin
         DateTime.parse(a) <=> DateTime.parse(b)
@@ -119,9 +177,9 @@ class ProfileCommand < Clamp::Command
       end
     end
     timestamps.each do |timestamp|
-      requests_per_second = requests[timestamp]
-      printf "%s %5d r/#{granularity[0]} [%-100s]\n", timestamp, requests_per_second,
-             '#' * (requests_per_second * 100 / largest_requests_per_second)
+      requests_per_unit = requests[timestamp]
+      printf "%s %6d #{units_label} [%-80s]\n", timestamp, requests_per_unit,
+             '#' * (requests_per_unit.abs * 80 / largest_requests_per_unit)
     end
   end
 end

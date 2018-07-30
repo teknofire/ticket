@@ -20,6 +20,8 @@ class UnsplitCommand < Clamp::Command
   def execute
     return autocomplete if complete?
 
+    raise "Output file already exists" if File.exists?(output_file)
+
     input_files.sort.each do |file|
       cmd = ['cat',  file, ">> #{output_file}"]
       system(cmd.join(' '))
