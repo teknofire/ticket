@@ -79,3 +79,8 @@ Standard Deviation: 8.158455006290227
 ## Updates
 
 Once the `ticket` command is available on your system you can update it by running `ticket update`.  This will pull down the latest changes from GitHub and runs the `bundle`.
+
+## Troubleshooting
+
+* Errors with missing gems when switching between different versions of ruby.
+** To install the latest gem dependencies for a new ruby version run the `ticket shave` commmand, or possibly update the tool using `ticket update`. This should install the latest gems in the active ruby environment.
