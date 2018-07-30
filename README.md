@@ -83,4 +83,4 @@ Once the `ticket` command is available on your system you can update it by runni
 ## Troubleshooting
 
 * Errors with missing gems when switching between different versions of ruby.
-** To install the latest gem dependencies for a new ruby version run the `ticket shave` commmand, or possibly update the tool using `ticket update`. This should install the latest gems in the active ruby environment.
+  * To install the latest gem dependencies for a new ruby version run the `ticket shave` commmand, or possibly update the tool using `ticket update`. This should install the latest gems in the active ruby environment.
