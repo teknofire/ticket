@@ -25,13 +25,13 @@ class ListCommand < Clamp::Command
 
     if ids?
       puts "Listing all ticket ids".green unless quiet?
-      puts all_ticket_ids.join("\n")
+      puts all_ticket_ids.sort.join("\n")
     elsif client
-      puts "Listing known client names".green unless quiet?
+      puts "Listing known ticket numbers for #{client}".green unless quiet?
       puts ticket_ids(client).join("\n")
     else
       puts "Listing known client names".green unless quiet?
-      puts client_list.join("\n")
+      puts client_list.sort.join("\n")
     end
 
     # example usage
@@ -43,7 +43,7 @@ class ListCommand < Clamp::Command
   end
 
   def autocomplete
-    puts client_list.join("\n")
+    puts client_list.sort.join("\n")
     exit
   end
 end
