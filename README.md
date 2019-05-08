@@ -36,6 +36,14 @@ source ~/.zshrc
 
 You can also install the command into a different directory, say `$HOME/projects/ticket` and adjust the paths to the `ticket init` command above as needed.
 
+## Configuration
+
+Right now the configuration for this tool is very limited.  You can control some behavior through environment variables.
+
+#### Available ENV configs
+
+* `TICKET_OPEN_BROWSER`: **boolean**; set this to `false` to disable opening a new browser window. **default:** true
+
 ## Available commands
 
 The tool should be mostly self documenting, to see all the available commands run: `ticket help`
