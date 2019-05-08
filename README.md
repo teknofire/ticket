@@ -40,9 +40,9 @@ You can also install the command into a different directory, say `$HOME/projects
 
 Right now the configuration for this tool is very limited.  You can control some behavior through environment variables.
 
-Available ENV configs
+#### Available ENV configs
 
-* `TICKET_OPEN_BROWSER`: boolean, set this to `false` to disable opening a new browser window. default: true
+* `TICKET_OPEN_BROWSER`: **boolean**; set this to `false` to disable opening a new browser window. **default:** true
 
 ## Available commands
 
