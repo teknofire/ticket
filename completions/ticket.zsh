@@ -2,7 +2,7 @@ if [[ ! -o interactive ]]; then
     return
 fi
 
-compctl -K _ticket ticket
+compctl -K _ticket -J arguments + -f ticket -J files
 
 _ticket() {
   local word words completions
