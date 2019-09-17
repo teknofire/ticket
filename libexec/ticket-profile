@@ -16,18 +16,16 @@ require 'descriptive-statistics'
 class ProfileCommand < Clamp::Command
   include TicketInfo
 
-  LOG_TYPES = %w{ solr expander nginx erchef_requests rabbitmq_overview }
+  LOG_TYPES = %w{ solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview }
 
   option '--complete', :flag, 'autocomplete output', hidden: true
   option ['-m', '--minute'], :flag, 'show requests/minute'
+  option ['-h', '--hour'], :flag, 'show requests/hour'
   option ['-M', '--avg-minute'], :flag, 'show avg requests/second for each minute window'
   option ['-f', '--filter'], 'filter', 'filter results using', attribute_name: :filter
   option ['-j', '--jq-value'], 'jq_value', 'pull values from json data', attribute_name: :jq_value
   option ['-a', '--accumulator'], :flag, 'values accumulate'
   option ['-s', '--summary'], :flag, 'print statistics at the end'
-  option ['-u', '--unit_time'], 'unit_time', 'per unit of time value to use', default: 1, attribute_name: :unit_time do |s|
-    Integer(s)
-  end
   option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
     unless complete?
       raise ArgumentError.new("Invalid log type specified '#{s}'") unless s.nil? or LOG_TYPES.include?(s)
@@ -39,19 +37,20 @@ class ProfileCommand < Clamp::Command
   def execute
     return autocomplete if complete?
 
-
+    granularity = :second
+    units_label = 'r/s'
     if minute?
       granularity = :minute
       units_label = 'r/m'
+    elsif hour?
+      granularity = :hour
+      units_label = 'r/h'
+      units = 3600
     elsif avg_minute?
       granularity = :second_avg
       units_label = 'avg r/s'
       units = 60
-    else
-      granularity = :second
-      units_label = 'r/s'
     end
-    units ||= unit_time.dup
 
     # dup this so we don't get wierd side effects later on
     previous_accumulator_value = nil
@@ -70,6 +69,12 @@ class ProfileCommand < Clamp::Command
       time_divider = 'T'
     when 'nginx'
       time_match = '\[(.+?)\]\s*(.+)'
+      time_divider = ':'
+    when 'nginx2'
+      time_match = '\[(.+?)\+(.+)\]\s*(.+)'
+      time_divider = 'T'
+    when 'hab_nginx'
+      time_match = '\[(\d{2}\/.+?)\]\s*(.+)'
       time_divider = ':'
     when 'rabbitmq_overview'
       time_match = '\[(.+?)-\d+:\d+\]\s+(.+)'
@@ -92,6 +97,7 @@ class ProfileCommand < Clamp::Command
       fp.each do |line|
         next unless log_filter.nil? || line.match?(/#{log_filter}/)
         results = line.match(time_regexp)
+        next if results.nil?
 
         value = if jq_value.nil?
           1
@@ -103,28 +109,18 @@ class ProfileCommand < Clamp::Command
           shellout.stdout.to_i
         end
 
-        if accumulator?
-          # if previous value is nil we need to initialize it
-          # so the first row isn't a huge jump
-          previous_accumulator_value = value if previous_accumulator_value.nil?
-
-          saved_value = value
-
-          value -= previous_accumulator_value
-
-          # update the prev accumulator value
-          previous_accumulator_value = saved_value
-        end
-
-        requests[date_glob(results[1], time_divider, granularity)] += value
+        value = accumulate(value) if accumulator?
+        # puts 'foo' if requests.nil?
+        timestamp = date_glob(results[1], time_divider, granularity)
+        requests[timestamp] += value
       end
     end
 
-    if units > 1
-      requests.update(requests) do |date, requests_per_minute|
-        (requests_per_minute / units.to_f).round
-      end
-    end
+    # if units > 1
+    #   requests.update(requests) do |date, requests_per_minute|
+    #     (requests_per_minute / units.to_f).round
+    #   end
+    # end
 
     print_chart requests, granularity, units_label
 
@@ -139,13 +135,23 @@ class ProfileCommand < Clamp::Command
     end
   end
 
+  def accumulate(value)
+    # save previous value if not already done
+    @previous ||= value
+
+    delta = value - @previous
+    @previous = value
+
+    delta
+  end
+
   def autocomplete
     lastargs = [ARGV.last, ARGV[-2]]
     if (lastargs.include?('-t') || lastargs.include?('--type')) && !LOG_TYPES.include?(ARGV.last)
       opts = LOG_TYPES.dup
     else
-      opts = %w{ --filter }
-      opts += Dir.glob('*')
+      opts = %w{ --type --filter --summary --accumulator --unit_time --help }
+      # opts += Dir.glob('*')
     end
     opts -= ARGV
     print opts.join("\n")
@@ -159,6 +165,10 @@ class ProfileCommand < Clamp::Command
     d = time_divider.nil? ? date : date.sub(time_divider, ' ')
 
     case granularity
+    when :hour
+      results = d.match(/(.+):\d\d:\d\d/)
+      d = results[1] unless results.nil?
+      d += ':00'
     when :minute, :second_avg
       results = d.match(/(.+):\d\d/)
       d = results[1] unless results.nil?

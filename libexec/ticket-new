@@ -17,7 +17,7 @@ class NewCommand < Clamp::Command
   include TicketInfo
 
   option '--complete', :flag, 'autocomplete output', hidden: true
-  option '--[no-]open', :flag, 'Open ticket after workspace is created', default: true
+  option '--[no-]open', :flag, 'Open ticket after workspace is created', environment_variable: "TICKET_NEW_OPEN", default: true
 
   parameter '[CLIENT]', 'client name', :attribute_name => :client
   parameter '[TICKET_ID]', 'ticket id', :attribute_name => :ticket_id
