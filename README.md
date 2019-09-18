@@ -38,20 +38,17 @@ You can also install the command into a different directory, say `$HOME/projects
 
 ## Configuration
 
-Right now the configuration for this tool is very limited.  You can control some behavior through environment variables.
+To access the zendesk API you will need to create a config file with the API credentials.  Follow the instructions below on how to do that.
 
 #### Creating config file
 
-To use the `ticket download command you will need to create the following config file in `~/.support/ticket.toml`
+To use the `ticket download` command you will need to create a config file in `~/.support/ticket.toml`
 
-```toml
-zendesk_url = "https://getchef.zendesk.com/api/v2"
-zendesk_user = "username_email@chef.io"
-zendesk_token = "GetThisFromLastPass"
-logfile = "~/.support/ticket.log"
-```
+Download the example [ticket.toml](ticket-example.toml) config and update it with the correct API values. The token is available in LastPass.
 
 #### Available ENV configs
+
+It's also possible to control the default behavior of the `ticket open` command by setting an environment variable.
 
 * `TICKET_OPEN_BROWSER`: **boolean**; set this to `false` to disable opening a new browser window. **default:** true
 
