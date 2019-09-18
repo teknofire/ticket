@@ -40,6 +40,17 @@ You can also install the command into a different directory, say `$HOME/projects
 
 Right now the configuration for this tool is very limited.  You can control some behavior through environment variables.
 
+#### Creating config file
+
+To use the `ticket download command you will need to create the following config file in `~/.support/ticket.toml`
+
+```toml
+zendesk_url = "https://getchef.zendesk.com/api/v2"
+zendesk_user = "username_email@chef.io"
+zendesk_token = "GetThisFromLastPass"
+logfile = "~/.support/ticket.log"
+```
+
 #### Available ENV configs
 
 * `TICKET_OPEN_BROWSER`: **boolean**; set this to `false` to disable opening a new browser window. **default:** true
