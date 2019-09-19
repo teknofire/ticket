@@ -11,6 +11,7 @@ require 'clamp'
 require 'helpers/ticket_info'
 require 'helpers/config'
 require 'zendesk_api'
+require 'colorize'
 
 Clamp.allow_options_after_parameters = true
 class DownloadCommand < Clamp::Command
@@ -20,17 +21,35 @@ class DownloadCommand < Clamp::Command
   option '--verbose', :flag, 'verbose output'
   option '--force', :flag, 'force redownload of files'
 
-  parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
+  parameter '[TICKET_ID]', 'ticket_id', attribute_name: :ticket_id
 
   def execute
     return autocomplete if complete?
 
-    ticket = ZendeskAPI::Ticket.find(client, :id => ticket_id)
-    ticket.comments.all do |comment|
-      # puts comment.inspect
-      # puts comment.attachments
-      # puts '-' * 80
+    # dup ticket_id cause wierd things happen from clamp when updating arg params
+    # on our own
+    id = ticket_id.dup
 
+    unless find_local_ticket_info.nil?
+      ticket_info = load_ticket({ file: find_local_ticket_info })
+
+      if !id.nil? && ticket_info['id'] != id
+        signal_usage_error <<~EOH
+        The specified ticket id does not match the one for the current directory,
+               either remove the current ticket id from the command or switch to
+               another directory.
+        EOH
+      end
+
+      id = ticket_info['id']
+    end
+
+    if id.nil?
+      signal_usage_error "Unable find a ticket to download files from (id: #{id.inspect})".red
+    end
+
+    ticket = ZendeskAPI::Ticket.find(client, id: id)
+    ticket.comments.all do |comment|
       comment.attachments.each do |attachment|
         overwrite_message = ""
         if File.exist?(attachment.file_name)
@@ -45,8 +64,6 @@ class DownloadCommand < Clamp::Command
         wget_options = []
         wget_options << '--quiet' unless verbose?
         wget_options << "-O #{attachment.file_name}"
-
-
 
         puts "Downloading #{attachment.file_name}#{overwrite_message}"
         system "wget #{wget_options.join(' ')} '#{attachment.mapped_content_url}'"

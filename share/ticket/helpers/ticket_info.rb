@@ -25,7 +25,7 @@ module TicketInfo
 
   def find_local_ticket_info
     %w{ ticket.info ../ticket.info }.each do |file|
-      return file if File.exists?(file)
+      return file if File.exists?(File.expand_path(file))
     end
     return nil
   end
