@@ -2,3 +2,6 @@ zendesk_url = "https://getchef.zendesk.com/api/v2"
 zendesk_user = "username_email@chef.io"
 zendesk_token = "GetThisFromLastPass"
 logfile = "~/.support/ticket.log"
+# Auto download ticket attachments when opening a ticket
+autodownload = false
+open_broswer = false

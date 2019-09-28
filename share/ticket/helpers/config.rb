@@ -32,5 +32,13 @@ module Ticket
     def logfile
       @config.fetch('logfile')
     end
+
+    def autodownload?
+      !!@config.fetch('autodownload')
+    end
+
+    def open_browser?
+      !!@config.fetch('open_browser')
+    end
   end
 end

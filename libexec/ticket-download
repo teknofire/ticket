@@ -9,7 +9,7 @@ $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 
 require 'clamp'
 require 'helpers/ticket_info'
-require 'helpers/config'
+require 'helpers/actions'
 require 'zendesk_api'
 require 'colorize'
 
@@ -48,34 +48,7 @@ class DownloadCommand < Clamp::Command
       signal_usage_error "Unable find a ticket to download files from (id: #{id.inspect})".red
     end
 
-    ticket = ZendeskAPI::Ticket.find(client, id: id)
-    ticket.comments.all do |comment|
-      comment.attachments.each do |attachment|
-        overwrite_message = ""
-        if File.exist?(attachment.file_name)
-          if !force?
-            puts "Skipping #{attachment.file_name}, already exists..."
-            next
-          else
-            overwrite_message = ", overwritting existing file"
-          end
-        end
-
-        wget_options = []
-        wget_options << '--quiet' unless verbose?
-        wget_options << "-O #{attachment.file_name}"
-
-        puts "Downloading #{attachment.file_name}#{overwrite_message}"
-        system "wget #{wget_options.join(' ')} '#{attachment.mapped_content_url}'"
-      end
-    end
-
-    # example usage
-    # unless File.exists?(file)
-    #   signal_usage_error "file doesn't exist"
-    # end
-
-    # Put the rest of the download command here
+    Ticket::Actions.download(id, verbose: verbose?, force: force?)
   end
 
   def autocomplete
@@ -83,49 +56,6 @@ class DownloadCommand < Clamp::Command
 
     puts opts.join("\n")
     exit
-  end
-
-  def client
-    @client ||= ZendeskAPI::Client.new do |config|
-      # Mandatory:
-
-      config.url = Ticket.config.zendesk_url # e.g. https://mydesk.zendesk.com/api/v2
-
-      # Basic / Token Authentication
-      config.username = Ticket.config.zendesk_user
-
-      # Choose one of the following depending on your authentication choice
-      config.token = Ticket.config.zendesk_token
-      # config.password = "your zendesk password"
-
-      # OAuth Authentication
-      # config.access_token = "your OAuth access token"
-
-      # Optional:
-
-      # Retry uses middleware to notify the user
-      # when hitting the rate limit, sleep automatically,
-      # then retry the request.
-      config.retry = true
-
-      # Raise error when hitting the rate limit.
-      # This is ignored and always set to false when `retry` is enabled.
-      # Disabled by default.
-      config.raise_error_when_rate_limited = false
-
-      # Logger prints to STDERR by default, to e.g. print to stdout:
-      require 'logger'
-      config.logger = Logger.new(File.expand_path(Ticket.config.logfile))
-
-      # Changes Faraday adapter
-      # config.adapter = :patron
-
-      # Merged with the default client options hash
-      # config.client_options = {:ssl => {:verify => false}}
-
-      # When getting the error 'hostname does not match the server certificate'
-      # use the API at https://yoursubdomain.zendesk.com/api/v2
-    end
   end
 end
 
