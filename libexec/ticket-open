@@ -12,20 +12,25 @@ require 'json'
 require 'colorize'
 require 'fileutils'
 require 'helpers/ticket_info'
+require 'helpers/config'
+require 'helpers/actions'
 
+Clamp.allow_options_after_parameters = true
 class OpenCommand < Clamp::Command
   include TicketInfo
   attr_accessor :ticket
 
   option '--complete', :flag, 'autocomplete output', hidden: true
   option '--[no-]shell', :flag, 'Skip launching new shell for ticket', default: true
-  option '--[no-]browser', :flag, 'Skip opening ticket in browser', environment_variable: "TICKET_OPEN_BROWSER", default: true
+  option '--[no-]browser', :flag, 'Skip opening ticket in browser', default: Ticket.config.open_browser?
+  option '--[no-]download', :flag, 'Download files when opening ticket', default: Ticket.config.autodownload?
+  option '--verbose', :flag, 'verbose output'
 
   parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
 
   def execute
     return autocomplete if complete?
-    
+
     if ticket_id
       load_ticket(id: ticket_id)
     elsif find_local_ticket_info
@@ -46,16 +51,9 @@ class OpenCommand < Clamp::Command
     exit
   end
 
-  def load_ticket(opts = {})
-    if opts[:id]
-      filename = ticket_info_path(opts[:id])
-    elsif opts[:file]
-      filename = opts[:file]
-    else
-      raise "Did not specify an :id or :file to load"
-    end
-    @ticket = read_ticket_info(filename)
-    update_ticket_links(File.dirname(filename))
+  def download_files
+    return unless download?
+    Ticket::Actions.download(ticket_id, verbose: verbose?)
   end
 
   def update_ticket_links(path)
@@ -63,37 +61,8 @@ class OpenCommand < Clamp::Command
     FileUtils.ln_sf(path, linked_ticket_path)
   end
 
-  def read_ticket_info(filename)
-    return unless File.exists?(filename)
-    JSON.parse(File.read(filename))
-  end
-
-  def find_local_ticket_info
-    %w{ ticket.info ../ticket.info }.each do |file|
-      return file if File.exists?(file)
-    end
-    return nil
-  end
-
-  def ticket_info_path(id)
-    path = File.join(linked_ticket_path, id, 'ticket.info')
-    if File.exists?(path)
-      File.realpath(path)
-    else
-      path
-    end
-  end
-
   def linked_ticket_path
     File.join(root, '.tickets')
-  end
-
-  def ticket_url
-    "https://getchef.zendesk.com/agent/tickets/#{ticket['id']}"
-  end
-
-  def ticket_path
-    File.dirname(ticket_info_path(ticket['id']))
   end
 
   def launch_browser
@@ -113,6 +82,7 @@ class OpenCommand < Clamp::Command
     puts "Press [CTRL-D] to exit".red
 
     Dir.chdir ticket_path
+    download_files
     exec ENV['SHELL']
   end
 end
