@@ -10,7 +10,6 @@ $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 require 'clamp'
 require 'helpers/ticket_info'
 require 'helpers/actions'
-require 'zendesk_api'
 require 'colorize'
 
 Clamp.allow_options_after_parameters = true

@@ -12,6 +12,7 @@ require 'fileutils'
 require 'json'
 
 require 'helpers/ticket_info'
+require 'helpers/config'
 Clamp.allow_options_after_parameters = true
 
 class NewCommand < Clamp::Command
