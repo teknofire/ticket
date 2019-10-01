@@ -48,14 +48,18 @@ Download the example [ticket.toml](ticket-example.toml) config and update it wit
 
 ##### Supported config options
 
-* __autodownload__ (default: false): Automatically download ticket attachments when opening a ticket
-* __open_browser__ (default: false): Open a browser when opening a ticket
+It's also possible to control by setting an environment variable. I've noted below where those apply
+
+* __ticket_path__ (default: `~/support`, ENV: `TICKET_ROOT`): Location to store local ticket information.  
+* __autodownload__ (default: `false`): Automatically download ticket attachments when opening a ticket
+* __open_browser__ (default: `false`, ENV: `TICKET_OPEN_BROWSER`): Open a browser when opening a ticket
+* __zendesk_url__: URL for customer Zendesk API
+* __zendesk_user__: Email address of Zendesk User
+* __zendesk_token__: Token for API access for Zendesk User
 
 #### Available ENV configs
 
-It's also possible to control the default behavior of the `ticket open` command by setting an environment variable.
 
-* `TICKET_OPEN_BROWSER`: **boolean**; set this to `false` to disable opening a new browser window. **default:** true
 
 ## Available commands
 
