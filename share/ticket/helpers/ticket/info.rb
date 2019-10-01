@@ -9,21 +9,25 @@ module Ticket
 
     attr_reader :id, :client
 
-    def initialize(id = nil)
+    def initialize(id = nil, client = nil)
       if id.nil?
         file = find_local_ticket_info
       else
+        @id = id
         file = self.class.info_file_path(id)
       end
 
-      unless File.exist?(file)
-        raise NotFound, "Error: Could not find local ticket info\nExpected '#{file}' to exist"
+      unless client.nil?
+        @client = client
       end
 
-      @info = JSON.parse(File.read(file))
+      if File.exist?(file)
+        @info = JSON.parse(File.read(file))
 
-      @id = @info['id']
-      @client = @info['client']
+        # load data from ticket.info file
+        @id ||= @info['id']
+        @client ||= @info['client']
+      end
     end
 
     def find_local_ticket_info
@@ -31,10 +35,6 @@ module Ticket
         return file if File.exists?(File.expand_path(file))
       end
       return nil
-    end
-
-    def info_file_path
-      self.class.info_file_path(@id)
     end
 
     def url
@@ -53,12 +53,20 @@ module Ticket
       "#{client.capitalize} - #{id} (#{status})"
     end
 
+    def full_path
+      @full_path ||= self.class.full_path(client, id)
+    end
+
     def path
-      self.class.path(@id)
+      @path ||= self.class.path(id)
+    end
+
+    def info_file_path
+      @info_file_path ||= self.class.info_file_path(id)
     end
 
     def symlink
-      self.class.ticket_symlink(@id)
+      @symlink ||= self.class.ticket_symlink(id)
     end
 
     def delete(**opts)
@@ -70,13 +78,20 @@ module Ticket
       end
 
       # RM ticket info/downloads and clean up symlink
-      FileUtils.rm_rf path
+      FileUtils.rm_rf full_path
       FileUtils.rm symlink
     end
 
     def save
-      return unless File.directory?(path)
-      FileUtils.ln_sf(path, symlink)
+      puts full_path.inspect
+      FileUtils.mkdir_p(full_path)
+
+      return unless File.directory?(full_path)
+      FileUtils.ln_sf(full_path, symlink)
+
+      File.open(info_file_path, 'w') do |fp|
+        fp << JSON.pretty_generate({ id: id, client: client })
+      end
     end
 
     class << self
@@ -86,6 +101,10 @@ module Ticket
 
       def config
         Ticket.config
+      end
+
+      def full_path(client, id)
+        File.join(client_path(client), id)
       end
 
       def path(id)

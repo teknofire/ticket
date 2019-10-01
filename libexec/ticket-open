@@ -32,7 +32,7 @@ class OpenCommand < Clamp::Command
   def execute
     return autocomplete if complete?
 
-    @ticket ||= find_ticket(ticket_id)
+    @ticket ||= Ticket::Info.load(ticket_id)
 
     launch_browser
     launch_shell
