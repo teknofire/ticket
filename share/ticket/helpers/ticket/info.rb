@@ -50,6 +50,10 @@ module Ticket
     end
 
     def to_s
+      "#{client.capitalize} - #{id}"
+    end
+
+    def summary
       "#{client.capitalize} - #{id} (#{status})"
     end
 
@@ -70,10 +74,10 @@ module Ticket
     end
 
     def delete(**opts)
-      if opts[:yes] || prompt.yes?("Delete ticket #{self}?")
-        prompt.say "\u{2716}".red + " Deleting #{self}"
+      if opts[:yes] || prompt.yes?("Delete ticket #{summary}?")
+        prompt.say "\u{2716}".red + " Deleting #{summary}"
       else
-        prompt.say "Skipping #{self}".yellow
+        prompt.say "Skipping #{summary}".yellow
         return
       end
 

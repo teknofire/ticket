@@ -46,8 +46,11 @@ class CleanCommand < Ticket::Command
         puts 'Found the following closed tickets'.green
       end
 
+      format = "%-15s %-6s %s"
+      puts # intentionally blank
+      puts format % ['Client', 'ID', 'Status']
       puts '-' * 40
-      tickets.each { |t| puts "  %s" % t }
+      tickets.each { |t| puts format % [t.client.capitalize,t.id,t.status] }
       puts '-' * 40
 
       return unless prompt.yes?("Are you sure you want to delete the above tickets?")

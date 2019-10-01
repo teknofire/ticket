@@ -9,11 +9,9 @@ $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 
 require 'clamp'
 require 'colorize'
-require 'helpers/ticket_info'
+require 'helpers/ticket'
 
-class ListCommand < Clamp::Command
-  include TicketInfo
-
+class ListCommand < Ticket::Command
   option '--complete', :flag, 'autocomplete output', hidden: true
   option '--ids', :flag, 'list just ticket ids'
   option ['-q', '--quiet'], :flag, 'less verbose output'
@@ -25,21 +23,14 @@ class ListCommand < Clamp::Command
 
     if ids?
       puts "Listing all ticket ids".green unless quiet?
-      puts all_ticket_ids.sort.join("\n")
+      puts Ticket::Info.ids.sort.join("\n")
     elsif client
-      puts "Listing known ticket numbers for #{client}".green unless quiet?
-      puts ticket_ids(client).join("\n")
+      puts "Listing ticket numbers for #{client}".green unless quiet?
+      puts Ticket::Info.ids(client).sort.join("\n")
     else
-      puts "Listing known client names".green unless quiet?
-      puts client_list.sort.join("\n")
+      puts "Listing client".green unless quiet?
+      puts Ticket::Info.clients.map(&:capitalize).sort.join("\n")
     end
-
-    # example usage
-    # unless File.exists?(file)
-    #   signal_usage_error "file doesn't exist"
-    # end
-
-    # Put the rest of the list command here
   end
 
   def autocomplete
