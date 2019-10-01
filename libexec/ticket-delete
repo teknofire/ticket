@@ -11,10 +11,12 @@ require 'clamp'
 require 'colorize'
 require 'highline'
 require 'fileutils'
+require 'helpers/ticket'
 require 'helpers/ticket_info'
 
-class DeleteCommand < Clamp::Command
+class DeleteCommand < Ticket::Command
   include TicketInfo
+
   attr_accessor :ticket
 
   option '--complete', :flag, 'autocomplete output', hidden: true
@@ -25,28 +27,14 @@ class DeleteCommand < Clamp::Command
   def execute
     return autocomplete if complete?
 
-
     if ticket_id.nil?
       signal_usage_error "Please specify a ticket_id to delete"
     end
 
-    ticket_path = File.dirname(ticket_info_path(ticket_id))
-
-    unless File.directory?(ticket_path)
-      signal_usage_error "#{ticket_path} does not exist or is not a directory"
-    end
-
-    cli = HighLine.new
-    if yes? || cli.agree("Are you sure you want to delete #{ticket_path} [y/n]? ".red)
-      puts "Deleting #{ticket_path.green}"
-      FileUtils.rm_rf ticket_path
-
-      # clean up symlink
-      symlink = File.join(linked_ticket_path, ticket_id)
-      FileUtils.rm symlink if File.symlink?(symlink)
-    else
-      puts "Skipping delete of #{ticket_path}".yellow
-    end
+    ticket = Ticket::Info.load(ticket_id)
+    ticket.delete
+  rescue Ticket::NotFound => e
+    puts e.message.red
   end
 
   def autocomplete

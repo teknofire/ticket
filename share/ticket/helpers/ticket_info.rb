@@ -6,16 +6,8 @@ module TicketInfo
     ENV['TICKET_ROOT'] || File.join(ENV['HOME'], 'support')
   end
 
-  def load_ticket(opts = {})
-    if opts[:id]
-      filename = ticket_info_path(opts[:id])
-    elsif opts[:file]
-      filename = opts[:file]
-    else
-      raise "Did not specify an :id or :file to load"
-    end
-
-    @ticket = read_ticket_info(filename)
+  def find_ticket(id)
+    Ticket::Info.load(id)
   end
 
   def read_ticket_info(filename)
@@ -52,11 +44,11 @@ module TicketInfo
   end
 
   def ticket_url
-    "https://getchef.zendesk.com/agent/tickets/#{ticket['id']}"
+    "https://getchef.zendesk.com/agent/tickets/#{ticket.id}"
   end
 
   def ticket_path
-    File.dirname(ticket_info_path(ticket['id']))
+    File.dirname(ticket_info_path(ticket.id))
   end
 
   def client_list

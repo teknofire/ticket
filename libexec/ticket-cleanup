@@ -1,0 +1,85 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket cleanup
+# Summary: Clean up local ticket info for solved/closed tickets
+# Provide ticket completions
+# Built-in help
+
+$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+
+require 'clamp'
+require 'helpers/common'
+require 'helpers/ticket'
+
+class CleanCommand < Ticket::Command
+  option '--complete', :flag, 'autocomplete output', hidden: true
+  option ['-y', '--yes'], :flag, 'Auto repond yes to all questions', attribute_name: :yes
+  option ['-a', '--any'], :flag, 'Clean up any tickets even if they aren\'t solved', attribute_name: :any
+  parameter '[CLIENT]', 'name of client to clean', attribute_name: :client, default: 'all'
+
+  def execute
+    return autocomplete if complete?
+
+    delete_tickets
+    cleanup_client_directories
+  rescue Ticket::NotFound => e
+    puts e.message
+  end
+
+  def delete_tickets
+    client = nil if client == 'all'
+    tickets = Ticket::Info.all(client)
+
+    tickets.reject! do |ticket|
+      !['closed', 'solved'].include?(ticket.status)
+    end unless any?
+
+    if tickets.empty?
+      prompt.say "No tickets to clean up"
+      return
+    end
+
+    if client.nil? && !yes?
+      if any?
+        puts 'List all local tickets'.green
+      else
+        puts 'Found the following closed tickets'.green
+      end
+
+      puts '-' * 40
+      tickets.each { |t| puts "  %s" % t }
+      puts '-' * 40
+
+      return unless prompt.yes?("Are you sure you want to delete the above tickets?")
+    end
+
+    tickets.each do |ticket|
+      ticket.delete(yes: true)
+    end
+  end
+
+  def cleanup_client_directories
+    # clean up any empty client directories
+    clients = Ticket::Info.clients.reject { |c| !Ticket::Info.empty?(c) }
+    return if clients.empty?
+
+    prompt.say "Cleaning up empty client directories"
+
+    clients.each do |c|
+      path = Ticket::Info.client_path(c)
+      prompt.say "\u{2716}".red + " Removing #{c.capitalize}..."
+      FileUtils.rmdir(path)
+    end
+
+    prompt.say "Finished cleaning client directories".green
+  end
+
+  def autocomplete
+    opts = %w{ --help }
+
+    puts opts.join("\n")
+    exit
+  end
+end
+
+CleanCommand.run
