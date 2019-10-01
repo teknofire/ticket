@@ -74,6 +74,11 @@ module Ticket
       FileUtils.rm symlink
     end
 
+    def save
+      return unless File.directory?(path)
+      FileUtils.ln_sf(path, symlink)
+    end
+
     class << self
       def load(id)
         new(id)

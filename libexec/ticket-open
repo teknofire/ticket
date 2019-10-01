@@ -41,7 +41,7 @@ class OpenCommand < Clamp::Command
   end
 
   def autocomplete
-    opts = all_ticket_ids
+    opts = Ticket::Info.ids
     # opts = %w{ --verbose }
 
     puts opts.join("\n") unless opts.empty?
@@ -51,15 +51,6 @@ class OpenCommand < Clamp::Command
   def download_files
     return unless download?
     Ticket::Actions.download(ticket_id, verbose: verbose?)
-  end
-
-  def update_ticket_links(path)
-    return unless File.directory?(path)
-    FileUtils.ln_sf(path, linked_ticket_path)
-  end
-
-  def linked_ticket_path
-    File.join(root, '.tickets')
   end
 
   def launch_browser
