@@ -7,15 +7,11 @@
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 
-require 'clamp'
-require 'helpers/ticket_info'
+require 'helpers/ticket'
 require 'helpers/actions'
-require 'colorize'
 
 Clamp.allow_options_after_parameters = true
-class DownloadCommand < Clamp::Command
-  include TicketInfo
-
+class DownloadCommand < Ticket::Command
   option '--complete', :flag, 'autocomplete output', hidden: true
   option '--verbose', :flag, 'verbose output'
   option '--force', :flag, 'force redownload of files'
@@ -25,29 +21,19 @@ class DownloadCommand < Clamp::Command
   def execute
     return autocomplete if complete?
 
-    # dup ticket_id cause wierd things happen from clamp when updating arg params
-    # on our own
-    id = ticket_id.dup
+    ticket = Ticket::Info.load(ticket_id)
 
-    unless find_local_ticket_info.nil?
-      ticket_info = load_ticket({ file: find_local_ticket_info })
-
-      if !id.nil? && ticket_info['id'] != id
-        signal_usage_error <<~EOH
-        The specified ticket id does not match the one for the current directory,
-               either remove the current ticket id from the command or switch to
-               another directory.
-        EOH
-      end
-
-      id = ticket_info['id']
+    if !ticket_id.nil? && ticket.id != ticket_id
+      signal_usage_error <<~EOH
+      The specified ticket id does not match the one for the current directory,
+             either remove the current ticket id from the command or switch to
+             another directory.
+      EOH
     end
 
-    if id.nil?
-      signal_usage_error "Unable find a ticket to download files from (id: #{id.inspect})".red
-    end
-
-    Ticket::Actions.download(id, verbose: verbose?, force: force?)
+    Ticket::Actions.download(ticket.id, verbose: verbose?, force: force?)
+  rescue Ticket::NotFound => e
+    puts e.message.red
   end
 
   def autocomplete

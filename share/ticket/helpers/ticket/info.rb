@@ -10,9 +10,8 @@ module Ticket
     attr_reader :id, :client
 
     def initialize(id = nil, client = nil)
-      if id.nil?
-        file = find_local_ticket_info
-      else
+      file = find_local_ticket_info
+      if file.nil? && !id.nil?
         @id = id
         file = self.class.info_file_path(id)
       end

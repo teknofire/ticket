@@ -1,3 +1,4 @@
+require 'clamp'
 require 'colorize'
 require 'helpers/common'
 
