@@ -17,6 +17,11 @@ module Ticket
       @config.read
     end
 
+    def ticket_path
+      # support old config option with TICKET_ROOT env var
+      File.expand_path(ENV['TICKET_ROOT'] || @config.fetch('ticket_path') || File.join(ENV['HOME'], 'support'))
+    end
+
     def zendesk_url
       @config.fetch('zendesk_url')
     end

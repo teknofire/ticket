@@ -5,3 +5,4 @@ logfile = "~/.support/ticket.log"
 # Auto download ticket attachments when opening a ticket
 autodownload = false
 open_broswer = false
+ticket_path = "~/support/.ticket"

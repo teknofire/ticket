@@ -11,13 +11,9 @@ require 'clamp'
 require 'fileutils'
 require 'json'
 
-require 'helpers/ticket_info'
-require 'helpers/config'
-Clamp.allow_options_after_parameters = true
+require 'helpers/ticket'
 
-class NewCommand < Clamp::Command
-  include TicketInfo
-
+class NewCommand < Ticket::Command
   option '--complete', :flag, 'autocomplete output', hidden: true
   option '--[no-]open', :flag, 'Open ticket after workspace is created', environment_variable: "TICKET_NEW_OPEN", default: true
   option '--[no-]download', :flag, 'Download files when opening ticket', default: Ticket.config.autodownload?
@@ -32,15 +28,8 @@ class NewCommand < Clamp::Command
     signal_usage_error "Please provide a client name".red unless client
     signal_usage_error "Please provide a ticket id".red unless ticket_id
 
-    ticket_info_file = full_ticket_info_path(client, ticket_id)
-    ticket_info_path = File.dirname(ticket_info_file)
-
-    FileUtils.mkdir_p(ticket_info_path)
-    FileUtils.ln_sf(ticket_info_path, linked_ticket_path(ticket_id))
-
-    File.open(ticket_info_file, 'w') do |fp|
-      fp << JSON.pretty_generate({ id: ticket_id, client: client })
-    end
+    @ticket = Ticket::Info.new(ticket_id, client)
+    @ticket.save
 
     options = []
     options << '--download' if download?

@@ -12,10 +12,9 @@ require 'json'
 require 'colorize'
 require 'fileutils'
 require 'helpers/ticket_info'
-require 'helpers/config'
+require 'helpers/ticket'
 require 'helpers/actions'
 
-Clamp.allow_options_after_parameters = true
 class OpenCommand < Clamp::Command
   include TicketInfo
   attr_accessor :ticket
@@ -28,23 +27,21 @@ class OpenCommand < Clamp::Command
 
   parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
 
+  attr_accessor :ticket
+
   def execute
     return autocomplete if complete?
 
-    if ticket_id
-      load_ticket(id: ticket_id)
-    elsif find_local_ticket_info
-      load_ticket(file: find_local_ticket_info)
-    else
-      signal_usage_error "Unable to find ticket #{ticket_id.red}"
-    end
+    @ticket ||= Ticket::Info.load(ticket_id)
 
     launch_browser
     launch_shell
+  rescue Ticket::NotFound => e
+    puts e.message.red
   end
 
   def autocomplete
-    opts = all_ticket_ids
+    opts = Ticket::Info.ids
     # opts = %w{ --verbose }
 
     puts opts.join("\n") unless opts.empty?
@@ -56,32 +53,23 @@ class OpenCommand < Clamp::Command
     Ticket::Actions.download(ticket_id, verbose: verbose?)
   end
 
-  def update_ticket_links(path)
-    return unless File.directory?(path)
-    FileUtils.ln_sf(path, linked_ticket_path)
-  end
-
-  def linked_ticket_path
-    File.join(root, '.tickets')
-  end
-
   def launch_browser
     return unless browser?
 
-    puts "Opening #{ticket_url.green}"
-    system "open #{ticket_url}"
+    puts "Opening #{ticket.url.green}"
+    system "open #{ticket.url}"
   end
 
   def launch_shell
     # skip if user didn't request new shell
     return unless shell?
     # skip if we are already somewhere in the ticket_path
-    return if Dir.pwd.match?(ticket_path)
+    return if Dir.pwd.match?(ticket.path)
 
-    puts "Launching new #{File.basename(ENV['SHELL']).green} shell in #{ticket_path.green}"
+    puts "Launching new #{File.basename(ENV['SHELL']).green} shell in #{ticket.path.green}"
     puts "Press [CTRL-D] to exit".red
 
-    Dir.chdir ticket_path
+    Dir.chdir ticket.path
     download_files
     exec ENV['SHELL']
   end

@@ -3,13 +3,16 @@
 # Usage: ticket <%= @name %>
 # Summary: Describe <%= @name %> command here
 # Provide ticket completions
+# Built-in help
 
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 
 require 'clamp'
+require 'helpers/common'
 require 'helpers/ticket_info'
 
 class <%= @name.capitalize %>Command < Clamp::Command
+  include CommonHelpers
   include TicketInfo
 
   option '--complete', :flag, 'autocomplete output', hidden: true
