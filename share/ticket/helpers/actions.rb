@@ -62,7 +62,8 @@ module Ticket
       def find_files
         check_for = [
           ['*.part*'],
-          ['*.[0-9a-z][0-9a-z]'],
+          ['*.[0-9][0-9]'],
+          ['*.[a-z][a-z]'],
           ['*-[a-z][a-z]', '-']
         ]
         check_for.inject({}) do |collection,opts|
@@ -76,6 +77,8 @@ module Ticket
         return nil if file.empty?
         if File.fnmatch('*.tar.gz', file)
           file
+        elsif File.fnmatch('*.tar.gz.part', file)
+          file.gsub('.part', '')
         else
           "#{file}.tar.gz"
         end
@@ -84,17 +87,19 @@ module Ticket
       def combination_for(files, split = '.')
         return {} if files.empty?
 
-        files.uniq.inject({}) do |collection, file|
-          return collection if File.fnmatch?('.gz', file)
+        split ||= '.'
+        files.sort.uniq.inject({}) do |collection, file|
+          return collection if File.fnmatch?('*.gz', file)
 
           parts = file.split(split)
           parts.pop #discard the extention
-
           combo = check_extension(parts.join(split))
-          return collection if combo.nil?
 
-          collection[combo] ||= []
-          collection[combo] << file unless collection[combo].include?(file)
+          unless combo.nil?
+            collection[combo] ||= []
+            collection[combo] << file unless collection[combo].include?(file)
+          end
+
           collection
         end
       end
