@@ -1,6 +1,7 @@
 require 'clamp'
 require 'colorize'
 require 'helpers/common'
+require 'helpers/actions'
 
 Clamp.allow_options_after_parameters = true
 
