@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Usage: ticket combine
+# Summary: Describe combine command here
+# Provide ticket completions
+# Built-in help
+
+$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+
+require 'clamp'
+require 'helpers/common'
+require 'helpers/ticket'
+
+class CombineCommand < Clamp::Command
+  include CommonHelpers
+
+  option '--complete', :flag, 'autocomplete output', hidden: true
+  option ['-y', '--yes'], :flag, 'Answer yes to all questions', default: false
+
+  parameter '[SPLIT_FILES] ...', 'files to combine', attribute_name: :input_files
+
+  def execute
+    return autocomplete if complete?
+
+    if input_files.nil? || input_files.empty?
+      puts "Looking for split files..."
+      combos = find_files
+    else
+      combos = combination_for input_files
+    end
+
+    combos.each do |combo, files|
+      puts '-'*40
+      puts "Detected split files for " + "#{combo}".yellow
+      cmd = ['cat', files.sort, '>', combo]
+
+      puts "Combining #{files.count.to_s.yellow} into #{combo.yellow}"
+
+      if File.exist?(combo)
+        next if !yes? && prompt.no?("Output #{combo.yellow} already exists, overwrite?")
+      else
+        next unless yes? || prompt.yes?("Proceed?")
+      end
+
+      system(cmd.join(' '))
+      puts "Created #{combo.yellow}"
+    end
+    # example usage
+    # unless File.exists?(file)
+    #   signal_usage_error "file doesn't exist"
+    # end
+
+    # Put the rest of the combine command here
+  end
+
+  def find_files
+    combination_for Dir.glob('*.part*')
+  end
+
+  def combination_for(files)
+    files.inject({}) do |c, file|
+      parts = file.split('.')
+      parts.pop
+      combo = parts.join('.')
+      c[combo] ||= []
+      c[combo] << file unless c[combo].include?(file)
+      c
+    end
+  end
+
+  def autocomplete
+    opts = []
+    opts += Dir.glob('*.part*')
+    opts += %w{ --help -y }
+
+    puts opts.join("\n")
+    exit
+  end
+end
+
+CombineCommand.run

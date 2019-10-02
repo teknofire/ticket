@@ -9,11 +9,10 @@ $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 
 require 'clamp'
 require 'helpers/common'
-require 'helpers/ticket_info'
+require 'helpers/ticket'
 
 class <%= @name.capitalize %>Command < Clamp::Command
   include CommonHelpers
-  include TicketInfo
 
   option '--complete', :flag, 'autocomplete output', hidden: true
 

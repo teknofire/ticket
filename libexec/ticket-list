@@ -34,7 +34,7 @@ class ListCommand < Ticket::Command
   end
 
   def autocomplete
-    puts client_list.sort.join("\n")
+    puts Ticket::Info.clients.sort.join("\n")
     exit
   end
 end
