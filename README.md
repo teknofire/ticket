@@ -57,10 +57,6 @@ It's also possible to control by setting an environment variable. I've noted bel
 * __zendesk_user__: Email address of Zendesk User
 * __zendesk_token__: Token for API access for Zendesk User
 
-#### Available ENV configs
-
-
-
 ## Available commands
 
 The tool should be mostly self documenting, to see all the available commands run: `ticket help`
