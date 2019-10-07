@@ -63,7 +63,7 @@ class ProfileCommand < Ticket::Command
     end
     s
   end
-  parameter '[FILE]', 'file', :attribute_name => :file
+  parameter '[FILE] ...', 'files', :attribute_name => :files
 
   def record_details(line)
     @stats ||= {}
@@ -200,8 +200,21 @@ class ProfileCommand < Ticket::Command
     # dup this so we don't get wierd side effects later on
     previous_accumulator_value = nil
     log_filter = filter.dup
-    requests = Hash.new { |hash, key| hash[key] = 0 }
+    @requests = Hash.new { |hash, key| hash[key] = 0 }
 
+    files.each do |file|
+      gather_info(file, granularity)
+    end
+
+    print_chart @requests, granularity, units_label
+
+    if summary? || detailed?
+      display_details
+      display_stats(@requests)
+    end
+  end
+
+  def gather_info(file, granularity)
     time_match = DATETIME_FORMATS[log_type.to_sym][:match]
     time_divider = DATETIME_FORMATS[log_type.to_sym][:divider]
 
@@ -218,7 +231,7 @@ class ProfileCommand < Ticket::Command
       end
       units_label += '/s' if units > 1
     end
-    signal_usage_error "Please specify a file to profile" if file.nil?
+    signal_usage_error "Please specify a file to profile" if files.nil? || files.empty?
 
     time_regexp = Regexp.new(time_match)
     leftover_regexp = Regexp.new("#{time_match}(.+)")
@@ -243,35 +256,25 @@ class ProfileCommand < Ticket::Command
 
         record_details(line)
 
-        requests[timestamp] += value
+        @requests[timestamp] += value
       end
-    end
-
-    # if units > 1
-    #   requests.update(requests) do |date, requests_per_minute|
-    #     (requests_per_minute / units.to_f).round
-    #   end
-    # end
-
-    print_chart requests, granularity, units_label
-
-    if summary? || detailed?
-      display_details
-      display_stats(requests)
     end
   end
 
   def display_stats(requests)
+    times = requests.keys.sort
     stats = DescriptiveStatistics::Stats.new(requests.values)
     format = '%15s: %s'
     puts "\nGeneral Stats"
     puts '-' * 80
-    puts format % ['First time', requests.keys.first]
-    puts format % ['Last time', requests.keys.last]
+    puts format % ['First time', times.first]
+    puts format % ['Last time', times.last]
     puts format % ['Min value', stats.min]
     puts format % ['Max value', stats.max]
-    puts format % ['STD Deviation', stats.standard_deviation]
-    puts format % ["90th percentile", stats.value_from_percentile(90)]
+    (10..90).step(10).each do |i|
+      puts format % ["#{i}th percentile", stats.value_from_percentile(i)]
+    end
+    puts "%15s: %0.3f%%" % ['STD Deviation', stats.standard_deviation]
     puts '-' * 80
   end
 
