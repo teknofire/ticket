@@ -181,6 +181,7 @@ class ProfileCommand < Ticket::Command
 
   def execute
     return autocomplete if complete?
+    signal_usage_error "Please specify a file to profile" if files.nil? || files.empty?
 
     granularity = :second
     units_label = 'r/s'
@@ -201,6 +202,7 @@ class ProfileCommand < Ticket::Command
     previous_accumulator_value = nil
     log_filter = filter.dup
     @requests = Hash.new { |hash, key| hash[key] = 0 }
+
 
     files.each do |file|
       gather_info(file, granularity)
@@ -231,7 +233,6 @@ class ProfileCommand < Ticket::Command
       end
       units_label += '/s' if units > 1
     end
-    signal_usage_error "Please specify a file to profile" if files.nil? || files.empty?
 
     time_regexp = Regexp.new(time_match)
     leftover_regexp = Regexp.new("#{time_match}(.+)")
