@@ -8,24 +8,55 @@
 $LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
 
 require 'clamp'
-require 'helpers/ticket_info'
+require 'helpers/ticket'
 require 'date'
 require 'mixlib/shellout'
 require 'descriptive-statistics'
 
-class ProfileCommand < Clamp::Command
-  include TicketInfo
 
+
+class ProfileCommand < Ticket::Command
   LOG_TYPES = %w{ solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview }
+  DATETIME_FORMATS = {
+    solr: {
+      match: '^(.+?)\.\d+\s',
+      divider: '_'
+    },
+    expander: {
+      match: '^(.+?)\.\d+\s',
+      divider: '_'
+    },
+    erchef_requests: {
+      match: '^(.+?)Z\s*(.+)',
+      divider: 'T'
+    },
+    nginx: {
+      match: '\[(.+?)\]\s*(.+)',
+      divider: ':'
+    },
+    nginx2: {
+      match: '\[(.+?)\+(.+)\]\s*(.+)',
+      divider: 'T'
+    },
+    hab_nginx: {
+      match: '\[(\d{2}\/.+?)\]\s*(.+)',
+      divider: ':'
+    },
+    rabbitmq_overview: {
+      match: '\[(.+?)-\d+:\d+\]\s+(.+)',
+      divider: nil
+    }
+  }
 
   option '--complete', :flag, 'autocomplete output', hidden: true
   option ['-m', '--minute'], :flag, 'show requests/minute'
   option ['-h', '--hour'], :flag, 'show requests/hour'
   option ['-M', '--avg-minute'], :flag, 'show avg requests/second for each minute window'
   option ['-f', '--filter'], 'filter', 'filter results using', attribute_name: :filter
-  option ['-j', '--jq-value'], 'jq_value', 'pull values from json data', attribute_name: :jq_value
+  option ['-j', '--jq-value'], 'jq_value', 'jq string to pull values from json data', attribute_name: :jq_value
   option ['-a', '--accumulator'], :flag, 'values accumulate'
   option ['-s', '--summary'], :flag, 'print statistics at the end'
+  option ['-d', '--detailed'], :flag, 'print detailed statistics at the end'
   option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
     unless complete?
       raise ArgumentError.new("Invalid log type specified '#{s}'") unless s.nil? or LOG_TYPES.include?(s)
@@ -33,6 +64,120 @@ class ProfileCommand < Clamp::Command
     s
   end
   parameter '[FILE]', 'file', :attribute_name => :file
+
+  def record_details(line)
+    @stats ||= {}
+    case log_type
+    when 'nginx', 'nginx2'
+      nginx_details(line)
+    end
+  end
+
+  def nginx_details(line)
+    log_parts = line.scan(/"[^"]+"|\[[^\]]+\]|\S+/).map{ |s| s.delete('"') }.flatten.compact
+    # puts log_parts.inspect
+
+    request = log_parts[4]
+    status = log_parts[5]
+    method, path, http_version = request.split(' ')
+
+    uri = URI(File.join("http://localhost", path))
+    if uri.path.nil?
+      endpoint = 'unknown'
+    else
+      path_parts = uri.path.split('/')
+      if path_parts[1] == 'organizations'
+        endpoint = path_parts[3]
+        org = path_parts[2]
+      else
+        endpoint = path_parts.first
+      end
+    end
+    # puts request.inspect
+
+    # @stats['status'] ||= {}
+    # @stats['status'][status.to_s] ||= 0
+    # @stats['status'][status.to_s] += 1
+    add_stat('status', status)
+    add_stat('methods', method)
+    add_stat('methods_status', method, status)
+    add_stat('endpoints', endpoint)
+    add_stat('endpoints_status', endpoint, status)
+    add_stat('orgs', org)
+  end
+
+  def add_stat(group, first, second = nil, value = 1)
+    return if first.nil?
+    return if first.empty?
+
+    @stats ||= {}
+    @stats[group] ||= {}
+
+    if second.nil?
+      @stats[group][first] ||= 0
+      @stats[group][first] += value
+    else
+      @stats[group][first] ||= {}
+      @stats[group][first]['__total__'] ||= 0
+      @stats[group][first]['__total__'] += value
+      @stats[group][first][second] ||= 0
+      @stats[group][first][second] += value
+    end
+  end
+
+  def summarize(title, stats, max_key = 0)
+    return if stats.keys.empty?
+
+    total = stats.reject { |k,v| k == '__total__' }.values.sum.to_f
+
+    max_key += stats.keys.map(&:length).max
+    format = "%#{max_key}s: %7.3f%% (%i)"
+
+    unless title.nil?
+      puts "\n#{title}"
+      puts '-' * 80
+    end
+
+    stats.sort_by{ |k,v| [-v,k] }.each do |key,value|
+      next if key == '__total__'
+
+      percent = value.to_f / total * 100
+      puts format % [key, percent, value]
+    end
+    if stats.key?('__total__')
+      puts '-' * 40
+      puts format % ['Total', 100, stats['__total__']]
+    end
+  end
+
+  def summarize_multi(title, stats)
+    return if stats.keys.empty?
+
+    total = stats.map{|k,v| v['__total__'] }.sum.to_f
+
+    puts "\n#{title}"
+    puts '=' * 80
+
+    stats.sort_by{ |k,v| [-v['__total__'],k] }.each do |key,values|
+      percent = values['__total__'].to_f / total * 100
+      puts "%s - %0.3f%% (%i)" % [key, percent, values['__total__']]
+      puts '-' * (40)
+      summarize(nil, values)
+      puts
+    end
+  end
+
+  def display_details
+    summarize "Orgs", @stats['orgs']
+    summarize "HTTP Status", @stats['status']
+    if detailed?
+      summarize_multi "HTTP Method", @stats['methods_status']
+      summarize_multi "HTTP Endpoints", @stats['endpoints_status']
+    else
+      summarize "HTTP Method", @stats['methods']
+      summarize "HTTP Endpoints", @stats['endpoints']
+    end
+  end
 
   def execute
     return autocomplete if complete?
@@ -56,41 +201,25 @@ class ProfileCommand < Clamp::Command
     previous_accumulator_value = nil
     log_filter = filter.dup
     requests = Hash.new { |hash, key| hash[key] = 0 }
-    # puts log_type.inspect
+
+    time_match = DATETIME_FORMATS[log_type.to_sym][:match]
+    time_divider = DATETIME_FORMATS[log_type.to_sym][:divider]
+
     case log_type
     when 'solr', 'expander'
-      time_match = '^(.+?)\.\d+\s'
-      time_divider = '_'
       if log_filter.nil? && log_type == 'expander'
         log_filter = 'indexed'
       end
-    when 'erchef_requests'
-      time_match = '^(.+?)Z\s*(.+)'
-      time_divider = 'T'
-    when 'nginx'
-      time_match = '\[(.+?)\]\s*(.+)'
-      time_divider = ':'
-    when 'nginx2'
-      time_match = '\[(.+?)\+(.+)\]\s*(.+)'
-      time_divider = 'T'
-    when 'hab_nginx'
-      time_match = '\[(\d{2}\/.+?)\]\s*(.+)'
-      time_divider = ':'
     when 'rabbitmq_overview'
-      time_match = '\[(.+?)-\d+:\d+\]\s+(.+)'
-      time_divider = nil
       if accumulator?
         units_label = 'Δ msgs'
       else
         units_label = 'msgs'
       end
       units_label += '/s' if units > 1
-    else
-      time_match = '^(.+?)\.\d+\s*(.+)'
-      time_divider = '_'
     end
-
     signal_usage_error "Please specify a file to profile" if file.nil?
+
     time_regexp = Regexp.new(time_match)
     leftover_regexp = Regexp.new("#{time_match}(.+)")
     File.open(file, 'r') do |fp|
@@ -108,10 +237,12 @@ class ProfileCommand < Clamp::Command
           shellout.run_command
           shellout.stdout.to_i
         end
-
         value = accumulate(value) if accumulator?
         # puts 'foo' if requests.nil?
         timestamp = date_glob(results[1], time_divider, granularity)
+
+        record_details(line)
+
         requests[timestamp] += value
       end
     end
@@ -124,15 +255,24 @@ class ProfileCommand < Clamp::Command
 
     print_chart requests, granularity, units_label
 
-    if summary?
-      stats = DescriptiveStatistics::Stats.new(requests.values)
-      puts '-' * 80
-      puts "Min value: #{stats.min}"
-      puts "Max value: #{stats.max}"
-      puts "Standard Deviation: #{stats.standard_deviation}"
-      puts "90th percentile: #{stats.value_from_percentile(90)}"
-      puts '-' * 80
+    if summary? || detailed?
+      display_details
+      display_stats(requests)
     end
+  end
+
+  def display_stats(requests)
+    stats = DescriptiveStatistics::Stats.new(requests.values)
+    format = '%15s: %s'
+    puts "\nGeneral Stats"
+    puts '-' * 80
+    puts format % ['First time', requests.keys.first]
+    puts format % ['Last time', requests.keys.last]
+    puts format % ['Min value', stats.min]
+    puts format % ['Max value', stats.max]
+    puts format % ['STD Deviation', stats.standard_deviation]
+    puts format % ["90th percentile", stats.value_from_percentile(90)]
+    puts '-' * 80
   end
 
   def accumulate(value)
@@ -150,7 +290,7 @@ class ProfileCommand < Clamp::Command
     if (lastargs.include?('-t') || lastargs.include?('--type')) && !LOG_TYPES.include?(ARGV.last)
       opts = LOG_TYPES.dup
     else
-      opts = %w{ --type --filter --summary --accumulator --unit_time --help }
+      opts = %w{ --type --filter --summary --detailed --accumulator --unit_time --help }
       # opts += Dir.glob('*')
     end
     opts -= ARGV
@@ -161,7 +301,6 @@ class ProfileCommand < Clamp::Command
   private
 
   def date_glob(date, time_divider, granularity)
-
     d = time_divider.nil? ? date : date.sub(time_divider, ' ')
 
     case granularity
@@ -183,7 +322,7 @@ class ProfileCommand < Clamp::Command
       begin
         DateTime.parse(a) <=> DateTime.parse(b)
       rescue
-        raise "Invalid date: #{a} or #{b}"
+        raise "Invalid date: #{a} or #{b}, if you are using `-t nginx` try `-t nginx2`"
       end
     end
     timestamps.each do |timestamp|
