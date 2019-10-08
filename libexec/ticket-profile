@@ -56,6 +56,10 @@ class ProfileCommand < Ticket::Command
   option ['-a', '--accumulator'], :flag, 'values accumulate'
   option ['-s', '--summary'], :flag, 'print statistics at the end'
   option ['-d', '--detailed'], :flag, 'print detailed statistics at the end'
+  option ['-x', '--max-summary-items'], 'N', 'how many items to include summary lists', default: 10 do |s|
+    Integer(s)
+  end
+
   option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
     unless complete?
       raise ArgumentError.new("Invalid log type specified '#{s}'") unless s.nil? or LOG_TYPES.include?(s)
@@ -94,8 +98,11 @@ class ProfileCommand < Ticket::Command
     end
 
     agent = log_parts[9].split(' ')[0..1].join(' ')
+    client_name = log_parts[15]
 
-    # puts log_parts.inspect
+    # log_parts.each_index do |i|
+    #   puts "#{i}: #{log_parts[i]}"
+    # end
 
     # @stats['status'] ||= {}
     # @stats['status'][status.to_s] ||= 0
@@ -110,6 +117,8 @@ class ProfileCommand < Ticket::Command
     add_stat('endpoints', endpoint)
     add_stat('endpoints_status', endpoint, status)
     add_stat('orgs', org)
+    add_stat('clients', client_name)
+    add_stat('clients_status', client_name, status)
   end
 
   def add_stat(group, first, second = nil, value = 1)
@@ -131,7 +140,9 @@ class ProfileCommand < Ticket::Command
     end
   end
 
-  def summarize(title, stats, max_key = 0)
+  def summarize(title, data, item = nil, max_key = 0)
+    return unless item.nil? || data.key?(item)
+    stats = !item.nil? ? data.dig(item) : data
     return if stats.keys.empty?
 
     total = stats.reject { |k,v| k == '__total__' }.values.sum.to_f
@@ -144,7 +155,7 @@ class ProfileCommand < Ticket::Command
       puts '-' * 80
     end
 
-    stats.sort_by{ |k,v| [-v,k] }.each do |key,value|
+    stats.sort_by{ |k,v| [-v,k] }[0..max_summary_items].each do |key,value|
       next if key == '__total__'
 
       percent = value.to_f / total * 100
@@ -156,7 +167,9 @@ class ProfileCommand < Ticket::Command
     end
   end
 
-  def summarize_multi(title, stats)
+  def summarize_multi(title, data, item = nil)
+    return unless item.nil? || data.key?(item)
+    stats = !item.nil? ? data.dig(item) : data
     return if stats.keys.empty?
 
     total = stats.map{|k,v| v['__total__'] }.sum.to_f
@@ -164,7 +177,7 @@ class ProfileCommand < Ticket::Command
     puts "\n#{title}"
     puts '=' * 80
 
-    stats.sort_by{ |k,v| [-v['__total__'],k] }.each do |key,values|
+    stats.sort_by{ |k,v| [-v['__total__'],k] }[0..max_summary_items].each do |key,values|
       percent = values['__total__'].to_f / total * 100
       puts "%s - %0.3f%% (%i)" % [key, percent, values['__total__']]
       puts '-' * (40)
@@ -195,16 +208,21 @@ class ProfileCommand < Ticket::Command
   end
 
   def display_details
-    summarize "Orgs", @stats['orgs']
-    summarize "HTTP Status", @stats['status']
+    summarize "Orgs", @stats, 'orgs'
+    summarize "HTTP Status", @stats, 'status'
     if detailed?
-      summarize_multi "HTTP Method", @stats['methods_status']
-      summarize_multi "HTTP Endpoints", @stats['endpoints_status']
+      summarize_multi "HTTP Method", @stats, 'methods_status'
+      summarize_multi "HTTP Endpoints", @stats, 'endpoints_status'
     else
-      summarize "HTTP Method", @stats['methods']
-      summarize "HTTP Endpoints", @stats['endpoints']
+      summarize "HTTP Method", @stats, 'methods'
+      summarize "HTTP Endpoints", @stats, 'endpoints'
     end
-    summarize "Agents", @stats['agents']
+    summarize "Agents", @stats, 'agents'
+    if detailed?
+      summarize_multi "Client Names", @stats, 'clients_status'
+    else
+      summarize "Client Names", @stats, 'clients'
+    end
     summarize_request_size
   end
 
@@ -227,11 +245,8 @@ class ProfileCommand < Ticket::Command
       units = 60
     end
 
-    # dup this so we don't get wierd side effects later on
-    previous_accumulator_value = nil
-    log_filter = filter.dup
+    @stats ||= {}
     @requests = Hash.new { |hash, key| hash[key] = 0 }
-
 
     files.each do |file|
       gather_info(file, granularity)
@@ -248,6 +263,9 @@ class ProfileCommand < Ticket::Command
   def gather_info(file, granularity)
     time_match = DATETIME_FORMATS[log_type.to_sym][:match]
     time_divider = DATETIME_FORMATS[log_type.to_sym][:divider]
+    previous_accumulator_value = nil
+    # dup this so we don't get wierd side effects later on
+    log_filter = filter.dup
 
     case log_type
     when 'solr', 'expander'
@@ -265,9 +283,11 @@ class ProfileCommand < Ticket::Command
 
     time_regexp = Regexp.new(time_match)
     leftover_regexp = Regexp.new("#{time_match}(.+)")
+
     File.open(file, 'r') do |fp|
       fp.each do |line|
-        next unless log_filter.nil? || line.match?(/#{log_filter}/)
+        next unless log_filter.nil? || line.match?(Regexp.new(log_filter))
+
         results = line.match(time_regexp)
         next if results.nil?
 
