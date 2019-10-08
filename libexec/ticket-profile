@@ -151,11 +151,11 @@ class ProfileCommand < Ticket::Command
     format = "%#{max_key}s: %7.3f%% (%i)"
 
     unless title.nil?
-      puts "\n#{title}"
+      puts "\n#{title} (Total: #{stats.keys.count})"
       puts '-' * 80
     end
 
-    stats.sort_by{ |k,v| [-v,k] }[0..max_summary_items].each do |key,value|
+    stats.sort_by{ |k,v| [-v,k] }[0...max_summary_items].each do |key,value|
       next if key == '__total__'
 
       percent = value.to_f / total * 100
@@ -174,10 +174,10 @@ class ProfileCommand < Ticket::Command
 
     total = stats.map{|k,v| v['__total__'] }.sum.to_f
 
-    puts "\n#{title}"
+    puts "\n#{title} (Total: #{stats.keys.count})"
     puts '=' * 80
 
-    stats.sort_by{ |k,v| [-v['__total__'],k] }[0..max_summary_items].each do |key,values|
+    stats.sort_by{ |k,v| [-v['__total__'],k] }[0...max_summary_items].each do |key,values|
       percent = values['__total__'].to_f / total * 100
       puts "%s - %0.3f%% (%i)" % [key, percent, values['__total__']]
       puts '-' * (40)
@@ -187,7 +187,7 @@ class ProfileCommand < Ticket::Command
   end
 
   def summarize_request_size
-    puts "\nDownload request size"
+    puts "\nDownload request size (Total: #{Filesize.from("#{@request_size.sum} B").pretty})"
     puts '-'*80
 
     format = '%16s: %s'
