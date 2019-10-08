@@ -12,8 +12,7 @@ require 'helpers/ticket'
 require 'date'
 require 'mixlib/shellout'
 require 'descriptive-statistics'
-
-
+require 'filesize'
 
 class ProfileCommand < Ticket::Command
   LOG_TYPES = %w{ solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview }
@@ -93,11 +92,18 @@ class ProfileCommand < Ticket::Command
         endpoint = path_parts.first
       end
     end
-    # puts request.inspect
+
+    agent = log_parts[9].split(' ')[0..1].join(' ')
+
+    # puts log_parts.inspect
 
     # @stats['status'] ||= {}
     # @stats['status'][status.to_s] ||= 0
     # @stats['status'][status.to_s] += 1
+    @request_size ||= []
+    @request_size << log_parts.last.to_i
+
+    add_stat('agents', agent)
     add_stat('status', status)
     add_stat('methods', method)
     add_stat('methods_status', method, status)
@@ -167,6 +173,27 @@ class ProfileCommand < Ticket::Command
     end
   end
 
+  def summarize_request_size
+    puts "\nDownload request size"
+    puts '-'*80
+
+    format = '%16s: %s'
+    stats = DescriptiveStatistics::Stats.new(@request_size.sort)
+
+    puts format % ['Min size', Filesize.from("#{stats.min} B").pretty]
+    puts format % ['Max size', Filesize.from("#{stats.max} B").pretty]
+    puts format % ['Mean size', Filesize.from("#{stats.mean} B").pretty]
+
+    (50..90).step(10).each do |i|
+      size = Filesize.from(stats.value_from_percentile(i).to_s)
+      puts format % ["#{i}th percentile", size.pretty]
+    end
+    (95..99).each do |i|
+      size = Filesize.from(stats.value_from_percentile(i).to_s)
+      puts format % ["#{i}th percentile", size.pretty]
+    end
+  end
+
   def display_details
     summarize "Orgs", @stats['orgs']
     summarize "HTTP Status", @stats['status']
@@ -177,6 +204,8 @@ class ProfileCommand < Ticket::Command
       summarize "HTTP Method", @stats['methods']
       summarize "HTTP Endpoints", @stats['endpoints']
     end
+    summarize "Agents", @stats['agents']
+    summarize_request_size
   end
 
   def execute
@@ -265,17 +294,26 @@ class ProfileCommand < Ticket::Command
   def display_stats(requests)
     times = requests.keys.sort
     stats = DescriptiveStatistics::Stats.new(requests.values)
-    format = '%15s: %s'
-    puts "\nGeneral Stats"
+    format = '%16s: %i'
+    format_float = '%16s: %0.3f'
+    format_dates = '%16s: %s'
+
+    puts "\nGeneral Request Stats"
     puts '-' * 80
-    puts format % ['First time', times.first]
-    puts format % ['Last time', times.last]
+    puts format_dates % ['First time', times.first]
+    puts format_dates % ['Last time', times.last]
     puts format % ['Min value', stats.min]
     puts format % ['Max value', stats.max]
-    (10..90).step(10).each do |i|
+    puts format % ['Mean value', stats.mean]
+    puts format_float % ['STD Deviation', stats.standard_deviation]
+    (50..90).step(10).each do |i|
       puts format % ["#{i}th percentile", stats.value_from_percentile(i)]
     end
-    puts "%15s: %0.3f%%" % ['STD Deviation', stats.standard_deviation]
+    (98..99).each do |i|
+      value = stats.value_from_percentile(i)
+      next if value.nil?
+      puts format % ["#{i}th percentile", value]
+    end
     puts '-' * 80
   end
 
