@@ -12,9 +12,10 @@ module Ticket
         fetch_zendesk_ticket(id).comments.all do |comment|
           comment.attachments.each do |attachment|
             overwrite_message = ""
-            if File.exist?(attachment.file_name)
+            download_file = attachment.file_name.gsub(/[\[\]()\s]+/, '_')
+            if File.exist?(download_file)
               unless opts[:force]
-                puts "Skipping #{attachment.file_name}, already exists..."
+                puts "Skipping #{download_file}, already exists..."
                 next
               else
                 overwrite_message = ", overwritting existing file"
@@ -23,9 +24,9 @@ module Ticket
 
             wget_options = []
             wget_options << '--quiet' unless opts[:verbose]
-            wget_options << "-O #{attachment.file_name}"
+            wget_options << "-O \"#{download_file}\""
 
-            puts "Downloading #{attachment.file_name}#{overwrite_message}"
+            puts "Downloading #{download_file}#{overwrite_message}"
             system "wget #{wget_options.join(' ')} '#{attachment.mapped_content_url}'"
           end
         end
