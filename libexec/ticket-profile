@@ -104,21 +104,21 @@ class ProfileCommand < Ticket::Command
     #   puts "#{i}: #{log_parts[i]}"
     # end
 
-    # @stats['status'] ||= {}
-    # @stats['status'][status.to_s] ||= 0
-    # @stats['status'][status.to_s] += 1
     @request_size ||= []
-    @request_size << log_parts.last.to_i
+    @request_size << log_parts[18].to_i
 
     add_stat('agents', agent)
     add_stat('status', status)
-    add_stat('methods', method)
-    add_stat('methods_status', method, status)
-    add_stat('endpoints', endpoint)
-    add_stat('endpoints_status', endpoint, status)
     add_stat('orgs', org)
-    add_stat('clients', client_name)
-    add_stat('clients_status', client_name, status)
+    if detailed?
+      add_stat('methods_status', method, status)
+      add_stat('endpoints_status', endpoint, status)
+      add_stat('clients_status', client_name, status)
+    else
+      add_stat('methods', method)
+      add_stat('endpoints', endpoint)
+      add_stat('clients', client_name)
+    end
   end
 
   def add_stat(group, first, second = nil, value = 1)
@@ -327,7 +327,9 @@ class ProfileCommand < Ticket::Command
     puts format % ['Mean value', stats.mean]
     puts format_float % ['STD Deviation', stats.standard_deviation]
     (50..90).step(10).each do |i|
-      puts format % ["#{i}th percentile", stats.value_from_percentile(i)]
+      value = stats.value_from_percentile(i)
+      next if value.nil?
+      puts format % ["#{i}th percentile", value]
     end
     (98..99).each do |i|
       value = stats.value_from_percentile(i)
