@@ -15,7 +15,7 @@ require 'descriptive-statistics'
 require 'filesize'
 
 class ProfileCommand < Ticket::Command
-  LOG_TYPES = %w{ solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview }
+  LOG_TYPES = %w{ solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview a2 }
   DATETIME_FORMATS = {
     solr: {
       match: '^(.+?)\.\d+\s',
@@ -44,6 +44,10 @@ class ProfileCommand < Ticket::Command
     rabbitmq_overview: {
       match: '\[(.+?)-\d+:\d+\]\s+(.+)',
       divider: nil
+    },
+    a2: {
+      match: '\[(\d{2}\/.+?)\]\s*(.+)',
+      divider: ':'
     }
   }
 
@@ -72,158 +76,19 @@ class ProfileCommand < Ticket::Command
     @stats ||= {}
     case log_type
     when 'nginx', 'nginx2'
-      nginx_details(line)
+      @profile ||= Ticket::Profile::Nginx.new(detailed?, max_summary_items)
+      @profile.add(line)
+    when 'a2'
+      @profile ||= Ticket::Profile::AutomateLB.new(detailed?, max_summary_items)
+      @profile.add(line)
     end
   end
 
-  def nginx_details(line)
-    log_parts = line.scan(/"[^"]+"|\[[^\]]+\]|\S+/).map{ |s| s.delete('"') }.flatten.compact
-    # puts log_parts.inspect
-
-    request = log_parts[4]
-    status = log_parts[5]
-    method, path, http_version = request.split(' ')
-
-    uri = URI(File.join("http://localhost", path))
-    if uri.path.nil?
-      endpoint = 'unknown'
-    else
-      path_parts = uri.path.split('/')
-      if path_parts[1] == 'organizations'
-        endpoint = path_parts[3]
-        org = path_parts[2]
-      else
-        endpoint = path_parts.first
-      end
-    end
-
-    agent = log_parts[9].split(' ')[0..1].join(' ')
-    client_name = log_parts[15]
-
-    # log_parts.each_index do |i|
-    #   puts "#{i}: #{log_parts[i]}"
-    # end
-
-    @request_size ||= []
-    @request_size << log_parts[18].to_i
-
-    add_stat('agents', agent)
-    add_stat('status', status)
-    add_stat('orgs', org)
-    if detailed?
-      add_stat('methods_status', method, status)
-      add_stat('endpoints_status', endpoint, status)
-      add_stat('clients_status', client_name, status)
-    else
-      add_stat('methods', method)
-      add_stat('endpoints', endpoint)
-      add_stat('clients', client_name)
-    end
-  end
-
-  def add_stat(group, first, second = nil, value = 1)
-    return if first.nil?
-    return if first.empty?
-
-    @stats ||= {}
-    @stats[group] ||= {}
-
-    if second.nil?
-      @stats[group][first] ||= 0
-      @stats[group][first] += value
-    else
-      @stats[group][first] ||= {}
-      @stats[group][first]['__total__'] ||= 0
-      @stats[group][first]['__total__'] += value
-      @stats[group][first][second] ||= 0
-      @stats[group][first][second] += value
-    end
-  end
-
-  def summarize(title, data, item = nil, max_key = 0)
-    return unless item.nil? || data.key?(item)
-    stats = !item.nil? ? data.dig(item) : data
-    return if stats.keys.empty?
-
-    total = stats.reject { |k,v| k == '__total__' }.values.sum.to_f
-
-    max_key += stats.keys.map(&:length).max
-    format = "%#{max_key}s: %7.3f%% (%i)"
-
-    unless title.nil?
-      puts "\n#{title} (Total: #{stats.keys.count})"
-      puts '-' * 80
-    end
-
-    stats.sort_by{ |k,v| [-v,k] }[0...max_summary_items].each do |key,value|
-      next if key == '__total__'
-
-      percent = value.to_f / total * 100
-      puts format % [key, percent, value]
-    end
-    if stats.key?('__total__')
-      puts '-' * 40
-      puts format % ['Total', 100, stats['__total__']]
-    end
-  end
-
-  def summarize_multi(title, data, item = nil)
-    return unless item.nil? || data.key?(item)
-    stats = !item.nil? ? data.dig(item) : data
-    return if stats.keys.empty?
-
-    total = stats.map{|k,v| v['__total__'] }.sum.to_f
-
-    puts "\n#{title} (Total: #{stats.keys.count})"
-    puts '=' * 80
-
-    stats.sort_by{ |k,v| [-v['__total__'],k] }[0...max_summary_items].each do |key,values|
-      percent = values['__total__'].to_f / total * 100
-      puts "%s - %0.3f%% (%i)" % [key, percent, values['__total__']]
-      puts '-' * (40)
-      summarize(nil, values)
-      puts
-    end
-  end
-
-  def summarize_request_size
-    puts "\nDownload request size (Total: #{Filesize.from("#{@request_size.sum} B").pretty})"
-    puts '-'*80
-
-    format = '%16s: %s'
-    stats = DescriptiveStatistics::Stats.new(@request_size.sort)
-
-    puts format % ['Min size', Filesize.from("#{stats.min} B").pretty]
-    puts format % ['Max size', Filesize.from("#{stats.max} B").pretty]
-    puts format % ['Mean size', Filesize.from("#{stats.mean} B").pretty]
-
-    (50..90).step(10).each do |i|
-      size = Filesize.from(stats.value_from_percentile(i).to_s)
-      puts format % ["#{i}th percentile", size.pretty]
-    end
-    (95..99).each do |i|
-      size = Filesize.from(stats.value_from_percentile(i).to_s)
-      puts format % ["#{i}th percentile", size.pretty]
-    end
+  def nginx_details(profile, line)
   end
 
   def display_details
-    summarize "Orgs", @stats, 'orgs'
-    summarize "HTTP Status", @stats, 'status'
-    if detailed?
-      summarize_multi "HTTP Method", @stats, 'methods_status'
-      summarize_multi "HTTP Endpoints", @stats, 'endpoints_status'
-    else
-      summarize "HTTP Method", @stats, 'methods'
-      summarize "HTTP Endpoints", @stats, 'endpoints'
-    end
-    summarize "Agents", @stats, 'agents'
-    if detailed?
-      summarize_multi "Client Names", @stats, 'clients_status'
-    else
-      summarize "Client Names", @stats, 'clients'
-    end
-    summarize_request_size
+    @profile.display unless @profile.nil?
   end
 
   def execute
@@ -245,7 +110,6 @@ class ProfileCommand < Ticket::Command
       units = 60
     end
 
-    @stats ||= {}
     @requests = Hash.new { |hash, key| hash[key] = 0 }
 
     files.each do |file|
@@ -318,7 +182,7 @@ class ProfileCommand < Ticket::Command
     format_float = '%16s: %0.3f'
     format_dates = '%16s: %s'
 
-    puts "\nGeneral Request Stats"
+    puts "\nGeneral Request Stats".green
     puts '-' * 80
     puts format_dates % ['First time', times.first]
     puts format_dates % ['Last time', times.last]
@@ -336,7 +200,6 @@ class ProfileCommand < Ticket::Command
       next if value.nil?
       puts format % ["#{i}th percentile", value]
     end
-    puts '-' * 80
   end
 
   def accumulate(value)
@@ -366,25 +229,23 @@ class ProfileCommand < Ticket::Command
 
   def date_glob(date, time_divider, granularity)
     d = time_divider.nil? ? date : date.sub(time_divider, ' ')
+    dt = DateTime.parse(d)
 
     case granularity
     when :hour
-      results = d.match(/(.+):\d\d:\d\d/)
-      d = results[1] unless results.nil?
-      d += ':00'
+      dt.strftime('%F %H')
     when :minute, :second_avg
-      results = d.match(/(.+):\d\d/)
-      d = results[1] unless results.nil?
+      dt.strftime('%F %R')
+    else
+      dt.strftime('%F %T')
     end
-
-    d
   end
 
   def print_chart(requests, granularity, units_label)
     largest_requests_per_unit = requests.values.max
     timestamps = requests.keys.sort do |a, b|
       begin
-        DateTime.parse(a) <=> DateTime.parse(b)
+        a <=> b
       rescue
         raise "Invalid date: #{a} or #{b}, if you are using `-t nginx` try `-t nginx2`"
       end

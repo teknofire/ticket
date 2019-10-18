@@ -15,3 +15,6 @@ end
 
 require 'helpers/ticket/config'
 require 'helpers/ticket/info'
+require 'helpers/ticket/profile'
+require 'helpers/ticket/profile/nginx'
+require 'helpers/ticket/profile/automate_lb'
