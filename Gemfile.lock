@@ -6,7 +6,7 @@ GEM
     concurrent-ruby (1.1.5)
     descriptive-statistics (2.2.0)
     equatable (0.6.1)
-    faker (2.6.0)
+    faker (2.7.0)
       i18n (>= 1.6, < 1.8)
     faraday (0.15.4)
       multipart-post (>= 1.2, < 3)
