@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require 'clamp'
-require 'colorize'
-require 'helpers/common'
-require 'helpers/actions'
+require "clamp"
+require "colorize"
+require "helpers/common"
+require "helpers/actions"
 
 Clamp.allow_options_after_parameters = true
 
@@ -15,8 +15,8 @@ module Ticket
   end
 end
 
-require 'helpers/ticket/config'
-require 'helpers/ticket/info'
-require 'helpers/ticket/profile'
-require 'helpers/ticket/profile/nginx'
-require 'helpers/ticket/profile/automate_lb'
+require "helpers/ticket/config"
+require "helpers/ticket/info"
+require "helpers/ticket/profile"
+require "helpers/ticket/profile/nginx"
+require "helpers/ticket/profile/automate_lb"

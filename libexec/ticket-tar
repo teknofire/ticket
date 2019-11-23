@@ -5,13 +5,13 @@
 # Summary: Describe tar command here
 # Provide ticket completions
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'clamp'
-require 'helpers/ticket_info'
+require "clamp"
+require "helpers/ticket_info"
 
 class TarListCommand < Clamp::Command
-  parameter 'FILE', 'File to list contents of', attribute_name: :file
+  parameter "FILE", "File to list contents of", attribute_name: :file
   def execute
     puts "Listing contents of #{file}"
 
@@ -19,15 +19,15 @@ class TarListCommand < Clamp::Command
   end
 
   def self.autocomplete
-    Dir.glob('*.tbz2') + Dir.glob('*.tar.gz') - ARGV
+    Dir.glob("*.tbz2") + Dir.glob("*.tar.gz") - ARGV
   end
 end
 
 class TarViewCommand < Clamp::Command
-  option '--viewer', 'VIEWER', 'Viewer to use', default: 'less'
+  option "--viewer", "VIEWER", "Viewer to use", default: "less"
 
-  parameter 'TARFILE', 'Tar file to view the contents from', attribute_name: :tarfile
-  parameter 'FILE', 'File in the tar to view the contents of', attribute_name: :file
+  parameter "TARFILE", "Tar file to view the contents from", attribute_name: :tarfile
+  parameter "FILE", "File in the tar to view the contents of", attribute_name: :file
 
   def execute
     exec "tar -xOf #{tarfile} #{file}"
@@ -46,14 +46,14 @@ end
 class TarCommand < Clamp::Command
   include TicketInfo
 
-  option '--complete', :flag, 'autocomplete output' do
+  option "--complete", :flag, "autocomplete output" do
     autocomplete
     exit(0)
   end
 
-  self.default_subcommand = 'list'
-  subcommand %w[list l], 'list contents of tar', TarListCommand
-  subcommand %w[view v], 'view contents of file in tar', TarViewCommand
+  self.default_subcommand = "list"
+  subcommand %w[list l], "list contents of tar", TarListCommand
+  subcommand %w[view v], "view contents of file in tar", TarViewCommand
 
   def execute
     # example usage
@@ -67,11 +67,11 @@ class TarCommand < Clamp::Command
   def autocomplete
     opts = %w[list view --help]
 
-    if ARGV.include?('list') || ARGV.include?('l')
+    if ARGV.include?("list") || ARGV.include?("l")
       opts = TarListCommand.autocomplete
     end
 
-    if ARGV.include?('view') || ARGV.include?('v')
+    if ARGV.include?("view") || ARGV.include?("v")
       opts = TarViewCommand.autocomplete
     end
 

@@ -6,19 +6,19 @@
 # Provide ticket completions
 # Built-in help
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'clamp'
-require 'helpers/common'
-require 'helpers/ticket'
+require "clamp"
+require "helpers/common"
+require "helpers/ticket"
 
 class CombineCommand < Clamp::Command
   include CommonHelpers
 
-  option '--complete', :flag, 'autocomplete output', hidden: true
-  option ['-y', '--yes'], :flag, 'Answer yes to all questions', default: false
+  option "--complete", :flag, "autocomplete output", hidden: true
+  option ["-y", "--yes"], :flag, "Answer yes to all questions", default: false
 
-  parameter '[SPLIT_FILES] ...', 'files to combine', attribute_name: :input_files
+  parameter "[SPLIT_FILES] ...", "files to combine", attribute_name: :input_files
 
   def execute
     return autocomplete if complete?
@@ -28,7 +28,7 @@ class CombineCommand < Clamp::Command
 
   def autocomplete
     opts = []
-    opts += Dir.glob('*.part*')
+    opts += Dir.glob("*.part*")
     opts += %w[--help -y]
 
     puts opts.join("\n")

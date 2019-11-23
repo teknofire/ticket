@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require 'json'
-require 'fileutils'
+require "json"
+require "fileutils"
 
 module TicketInfo
   def root
-    ENV['TICKET_ROOT'] || File.join(ENV['HOME'], 'support')
+    ENV["TICKET_ROOT"] || File.join(ENV["HOME"], "support")
   end
 
   def find_ticket(id)
@@ -26,11 +26,11 @@ module TicketInfo
   end
 
   def full_ticket_info_path(client, id)
-    File.join(root, client, id, 'ticket.info')
+    File.join(root, client, id, "ticket.info")
   end
 
   def ticket_info_path(id)
-    path = File.join(linked_ticket_path, id, 'ticket.info')
+    path = File.join(linked_ticket_path, id, "ticket.info")
     if File.exist?(path)
       File.realpath(path)
     else
@@ -39,7 +39,7 @@ module TicketInfo
   end
 
   def linked_ticket_path(ticket_id = nil)
-    params = [root, '.tickets']
+    params = [root, ".tickets"]
     FileUtils.mkdir_p File.join(params)
 
     params << ticket_id if ticket_id
@@ -55,14 +55,14 @@ module TicketInfo
   end
 
   def client_list
-    Dir.entries(root).reject { |file| file[0] == '.' }
+    Dir.entries(root).reject { |file| file[0] == "." }
   end
 
   def all_ticket_ids
-    Dir.entries(linked_ticket_path).reject { |file| file[0] == '.' }
+    Dir.entries(linked_ticket_path).reject { |file| file[0] == "." }
   end
 
   def ticket_ids(client)
-    Dir.entries(File.join(root, client)).reject { |file| file[0] == '.' }
+    Dir.entries(File.join(root, client)).reject { |file| file[0] == "." }
   end
 end

@@ -6,16 +6,16 @@
 # Provide ticket completions
 # Built-in help
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'clamp'
-require 'helpers/ticket_info'
+require "clamp"
+require "helpers/ticket_info"
 
 class PeekCommand < Clamp::Command
   include TicketInfo
 
-  option '--complete', :flag, 'autocomplete output', hidden: true
-  parameter '[TICKET_ID]', 'ticket_id', attribute_name: :ticket_id
+  option "--complete", :flag, "autocomplete output", hidden: true
+  parameter "[TICKET_ID]", "ticket_id", attribute_name: :ticket_id
 
   def execute
     return autocomplete if complete?

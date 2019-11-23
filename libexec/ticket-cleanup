@@ -6,17 +6,17 @@
 # Provide ticket completions
 # Built-in help
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'clamp'
-require 'helpers/common'
-require 'helpers/ticket'
+require "clamp"
+require "helpers/common"
+require "helpers/ticket"
 
 class CleanCommand < Ticket::Command
-  option '--complete', :flag, 'autocomplete output', hidden: true
-  option ['-y', '--yes'], :flag, 'Auto repond yes to all questions', attribute_name: :yes
-  option ['-a', '--any'], :flag, 'Clean up any tickets even if they aren\'t solved', attribute_name: :any
-  parameter '[CLIENT]', 'name of client to clean', attribute_name: :client, default: 'all'
+  option "--complete", :flag, "autocomplete output", hidden: true
+  option ["-y", "--yes"], :flag, "Auto repond yes to all questions", attribute_name: :yes
+  option ["-a", "--any"], :flag, "Clean up any tickets even if they aren't solved", attribute_name: :any
+  parameter "[CLIENT]", "name of client to clean", attribute_name: :client, default: "all"
 
   def execute
     return autocomplete if complete?
@@ -28,7 +28,7 @@ class CleanCommand < Ticket::Command
   end
 
   def delete_tickets
-    client = nil if client == 'all'
+    client = nil if client == "all"
     tickets = Ticket::Info.all(client)
 
     unless any?
@@ -38,25 +38,25 @@ class CleanCommand < Ticket::Command
     end
 
     if tickets.empty?
-      prompt.say 'No tickets to clean up'
+      prompt.say "No tickets to clean up"
       return
     end
 
     if client.nil? && !yes?
       if any?
-        puts 'List all local tickets'.green
+        puts "List all local tickets".green
       else
-        puts 'Found the following closed tickets'.green
+        puts "Found the following closed tickets".green
       end
 
-      format = '%-15s %-6s %s'
+      format = "%-15s %-6s %s"
       puts # intentionally blank
-      puts format(format, 'Client', 'ID', 'Status')
-      puts '-' * 40
+      puts format(format, "Client", "ID", "Status")
+      puts "-" * 40
       tickets.each { |t| puts format(format, t.client.capitalize, t.id, t.status) }
-      puts '-' * 40
+      puts "-" * 40
 
-      unless prompt.yes?('Are you sure you want to delete the above tickets?')
+      unless prompt.yes?("Are you sure you want to delete the above tickets?")
         return
       end
     end
@@ -71,7 +71,7 @@ class CleanCommand < Ticket::Command
     clients = Ticket::Info.clients.select { |c| Ticket::Info.empty?(c) }
     return if clients.empty?
 
-    prompt.say 'Cleaning up empty client directories'
+    prompt.say "Cleaning up empty client directories"
 
     clients.each do |c|
       path = Ticket::Info.client_path(c)
@@ -79,7 +79,7 @@ class CleanCommand < Ticket::Command
       FileUtils.rmdir(path)
     end
 
-    prompt.say 'Finished cleaning client directories'.green
+    prompt.say "Finished cleaning client directories".green
   end
 
   def autocomplete

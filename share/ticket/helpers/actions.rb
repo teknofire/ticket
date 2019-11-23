@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'fileutils'
-require 'helpers/ticket'
-require 'helpers/ticket/config'
+require "fileutils"
+require "helpers/ticket"
+require "helpers/ticket/config"
 
 module Ticket
   class Actions
@@ -20,11 +20,11 @@ module Ticket
 
         zdticket.comments.all do |comment|
           comment.attachments.each do |attachment|
-            overwrite_message = ''
-            download_file = attachment.file_name.gsub(/[\[\]()\s]+/, '_')
+            overwrite_message = ""
+            download_file = attachment.file_name.gsub(/[\[\]()\s]+/, "_")
             if File.exist?(download_file)
               if opts[:force]
-                overwrite_message = ', overwritting existing file'
+                overwrite_message = ", overwritting existing file"
               else
                 puts "Skipping #{download_file}, already exists..."
                 next
@@ -32,7 +32,7 @@ module Ticket
             end
 
             wget_options = []
-            wget_options << '--quiet' unless opts[:verbose]
+            wget_options << "--quiet" unless opts[:verbose]
             wget_options << "-O \"#{download_file}\""
 
             puts "Downloading #{download_file}#{overwrite_message}"
@@ -43,16 +43,16 @@ module Ticket
 
       def combine_files(input_files = nil, **opts)
         if input_files.nil? || input_files.empty?
-          puts 'Looking for split files...'
+          puts "Looking for split files..."
           combos = find_files
         else
           combos = combination_for input_files
         end
 
         combos.each do |combo, files|
-          puts '-' * 40
-          puts 'Detected split files for ' + combo.to_s.yellow
-          cmd = ['cat', files.sort, '>', combo]
+          puts "-" * 40
+          puts "Detected split files for " + combo.to_s.yellow
+          cmd = ["cat", files.sort, ">", combo]
 
           puts "Combining #{files.count.to_s.yellow} files into #{combo.yellow}"
 
@@ -61,10 +61,10 @@ module Ticket
               next
             end
           else
-            next unless opts[:force] || prompt.yes?('Proceed?')
+            next unless opts[:force] || prompt.yes?("Proceed?")
           end
 
-          system(cmd.join(' '))
+          system(cmd.join(" "))
           puts "Created #{combo.yellow}"
         end
       end
@@ -73,10 +73,10 @@ module Ticket
 
       def find_files
         check_for = [
-          ['*.part*'],
-          ['*.[0-9][0-9]'],
-          ['*.[a-z][a-z]'],
-          ['*-[a-z][a-z]', '-']
+          ["*.part*"],
+          ["*.[0-9][0-9]"],
+          ["*.[a-z][a-z]"],
+          ["*-[a-z][a-z]", "-"]
         ]
         check_for.each_with_object({}) do |opts, collection|
           files = combination_for(Dir.glob(opts.shift), opts.shift)
@@ -87,21 +87,21 @@ module Ticket
       def check_extension(file)
         return nil if file.empty?
 
-        if File.fnmatch('*.tar.gz', file)
+        if File.fnmatch("*.tar.gz", file)
           file
-        elsif File.fnmatch('*.tar.gz.part', file)
-          file.gsub('.part', '')
+        elsif File.fnmatch("*.tar.gz.part", file)
+          file.gsub(".part", "")
         else
           "#{file}.tar.gz"
         end
       end
 
-      def combination_for(files, split = '.')
+      def combination_for(files, split = ".")
         return {} if files.empty?
 
-        split ||= '.'
+        split ||= "."
         files.sort.uniq.each_with_object({}) do |file, collection|
-          return collection if File.fnmatch?('*.gz', file)
+          return collection if File.fnmatch?("*.gz", file)
 
           parts = file.split(split)
           parts.pop # discard the extention

@@ -6,18 +6,18 @@
 # Provide ticket completions
 # Built-in help
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'helpers/ticket'
-require 'helpers/actions'
+require "helpers/ticket"
+require "helpers/actions"
 
 Clamp.allow_options_after_parameters = true
 class DownloadCommand < Ticket::Command
-  option '--complete', :flag, 'autocomplete output', hidden: true
-  option '--verbose', :flag, 'verbose output'
-  option '--force', :flag, 'force redownload of files'
+  option "--complete", :flag, "autocomplete output", hidden: true
+  option "--verbose", :flag, "verbose output"
+  option "--force", :flag, "force redownload of files"
 
-  parameter '[TICKET_ID]', 'ticket_id', attribute_name: :ticket_id
+  parameter "[TICKET_ID]", "ticket_id", attribute_name: :ticket_id
 
   def execute
     return autocomplete if complete?

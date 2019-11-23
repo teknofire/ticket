@@ -5,27 +5,27 @@
 # Summary: unsplit give file into OUTPUT_FILE
 # Provide ticket completions
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'clamp'
-require 'helpers/ticket_info'
+require "clamp"
+require "helpers/ticket_info"
 
 class UnsplitCommand < Clamp::Command
   include TicketInfo
 
-  option '--complete', :flag, 'autocomplete output', hidden: true
+  option "--complete", :flag, "autocomplete output", hidden: true
 
-  parameter 'OUTPUT_FILE', 'output file', attribute_name: :output_file
-  parameter 'INPUT_FILES ...', 'input files', attribute_name: :input_files
+  parameter "OUTPUT_FILE", "output file", attribute_name: :output_file
+  parameter "INPUT_FILES ...", "input files", attribute_name: :input_files
 
   def execute
     return autocomplete if complete?
 
-    raise 'Output file already exists' if File.exist?(output_file)
+    raise "Output file already exists" if File.exist?(output_file)
 
     input_files.sort.each do |file|
-      cmd = ['cat', file, ">> #{output_file}"]
-      system(cmd.join(' '))
+      cmd = ["cat", file, ">> #{output_file}"]
+      system(cmd.join(" "))
     end
     # example usage
     # unless File.exists?(file)

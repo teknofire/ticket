@@ -6,41 +6,41 @@
 # Provide ticket completions
 # main code handling lifted from support-docs repo
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'clamp'
-require 'helpers/ticket'
-require 'date'
-require 'mixlib/shellout'
-require 'descriptive-statistics'
-require 'filesize'
+require "clamp"
+require "helpers/ticket"
+require "date"
+require "mixlib/shellout"
+require "descriptive-statistics"
+require "filesize"
 
 class ProfileCommand < Ticket::Command
   LOG_TYPES = %w[solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview a2].freeze
   DATETIME_FORMATS = {
     solr: {
       match: '^(.+?)\.\d+\s',
-      divider: '_'
+      divider: "_"
     },
     expander: {
       match: '^(.+?)\.\d+\s',
-      divider: '_'
+      divider: "_"
     },
     erchef_requests: {
       match: '^(.+?)Z\s*(.+)',
-      divider: 'T'
+      divider: "T"
     },
     nginx: {
       match: '\[(.+?)\]\s*(.+)',
-      divider: ':'
+      divider: ":"
     },
     nginx2: {
       match: '\[(.+?)\+(.+)\]\s*(.+)',
-      divider: 'T'
+      divider: "T"
     },
     hab_nginx: {
       match: '\[(\d{2}\/.+?)\]\s*(.+)',
-      divider: ':'
+      divider: ":"
     },
     rabbitmq_overview: {
       match: '\[(.+?)-\d+:\d+\]\s+(.+)',
@@ -48,24 +48,24 @@ class ProfileCommand < Ticket::Command
     },
     a2: {
       match: '\[(\d{2}\/.+?)\]\s*(.+)',
-      divider: ':'
+      divider: ":"
     }
   }.freeze
 
-  option '--complete', :flag, 'autocomplete output', hidden: true
-  option ['-m', '--minute'], :flag, 'show requests/minute'
-  option ['-h', '--hour'], :flag, 'show requests/hour'
-  option ['-M', '--avg-minute'], :flag, 'show avg requests/second for each minute window'
-  option ['-f', '--filter'], 'filter', 'filter results using', attribute_name: :filter
-  option ['-j', '--jq-value'], 'jq_value', 'jq string to pull values from json data', attribute_name: :jq_value
-  option ['-a', '--accumulator'], :flag, 'values accumulate'
-  option ['-s', '--summary'], :flag, 'print statistics at the end'
-  option ['-d', '--detailed'], :flag, 'print detailed statistics at the end'
-  option ['-x', '--max-summary-items'], 'N', 'how many items to include summary lists', default: 10 do |s|
+  option "--complete", :flag, "autocomplete output", hidden: true
+  option ["-m", "--minute"], :flag, "show requests/minute"
+  option ["-h", "--hour"], :flag, "show requests/hour"
+  option ["-M", "--avg-minute"], :flag, "show avg requests/second for each minute window"
+  option ["-f", "--filter"], "filter", "filter results using", attribute_name: :filter
+  option ["-j", "--jq-value"], "jq_value", "jq string to pull values from json data", attribute_name: :jq_value
+  option ["-a", "--accumulator"], :flag, "values accumulate"
+  option ["-s", "--summary"], :flag, "print statistics at the end"
+  option ["-d", "--detailed"], :flag, "print detailed statistics at the end"
+  option ["-x", "--max-summary-items"], "N", "how many items to include summary lists", default: 10 do |s|
     Integer(s)
   end
 
-  option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
+  option ["-t", "--type"], "log_type", "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
     unless complete?
       unless s.nil? || LOG_TYPES.include?(s)
         raise ArgumentError, "Invalid log type specified '#{s}'"
@@ -73,15 +73,15 @@ class ProfileCommand < Ticket::Command
     end
     s
   end
-  parameter '[FILE] ...', 'files', attribute_name: :files
+  parameter "[FILE] ...", "files", attribute_name: :files
 
   def record_details(line)
     @stats ||= {}
     case log_type
-    when 'nginx', 'nginx2'
+    when "nginx", "nginx2"
       @profile ||= Ticket::Profile::Nginx.new(detailed?, max_summary_items)
       @profile.add(line)
-    when 'a2'
+    when "a2"
       @profile ||= Ticket::Profile::AutomateLB.new(detailed?, max_summary_items)
       @profile.add(line)
     end
@@ -97,21 +97,21 @@ class ProfileCommand < Ticket::Command
     return autocomplete if complete?
 
     if files.nil? || files.empty?
-      signal_usage_error 'Please specify a file to profile'
+      signal_usage_error "Please specify a file to profile"
     end
 
     granularity = :second
-    units_label = 'r/s'
+    units_label = "r/s"
     if minute?
       granularity = :minute
-      units_label = 'r/m'
+      units_label = "r/m"
     elsif hour?
       granularity = :hour
-      units_label = 'r/h'
+      units_label = "r/h"
       units = 3600
     elsif avg_minute?
       granularity = :second_avg
-      units_label = 'avg r/s'
+      units_label = "avg r/s"
       units = 60
     end
 
@@ -137,21 +137,21 @@ class ProfileCommand < Ticket::Command
     log_filter = filter.dup
 
     case log_type
-    when 'solr', 'expander'
-      log_filter = 'indexed' if log_filter.nil? && log_type == 'expander'
-    when 'rabbitmq_overview'
+    when "solr", "expander"
+      log_filter = "indexed" if log_filter.nil? && log_type == "expander"
+    when "rabbitmq_overview"
       units_label = if accumulator?
-                      'Δ msgs'
+                      "Δ msgs"
                     else
-                      'msgs'
+                      "msgs"
                     end
-      units_label += '/s' if units > 1
+      units_label += "/s" if units > 1
     end
 
     time_regexp = Regexp.new(time_match)
     leftover_regexp = Regexp.new("#{time_match}(.+)")
 
-    File.open(file, 'r') do |fp|
+    File.open(file, "r") do |fp|
       fp.each do |line|
         next unless log_filter.nil? || line.match?(Regexp.new(log_filter))
 
@@ -181,18 +181,18 @@ class ProfileCommand < Ticket::Command
   def display_stats(requests)
     times = requests.keys.sort
     stats = DescriptiveStatistics::Stats.new(requests.values)
-    format = '%16s: %i'
-    format_float = '%16s: %0.3f'
-    format_dates = '%16s: %s'
+    format = "%16s: %i"
+    format_float = "%16s: %0.3f"
+    format_dates = "%16s: %s"
 
     puts "\nGeneral Request Stats".green
-    puts '-' * 80
-    puts format(format_dates, 'First time', times.first)
-    puts format(format_dates, 'Last time', times.last)
-    puts format(format, 'Min value', stats.min || 0)
-    puts format(format, 'Max value', stats.max || 0)
-    puts format(format, 'Mean value', stats.mean || 0)
-    puts format(format_float, 'STD Deviation', stats.standard_deviation || 0)
+    puts "-" * 80
+    puts format(format_dates, "First time", times.first)
+    puts format(format_dates, "Last time", times.last)
+    puts format(format, "Min value", stats.min || 0)
+    puts format(format, "Max value", stats.max || 0)
+    puts format(format, "Mean value", stats.mean || 0)
+    puts format(format_float, "STD Deviation", stats.standard_deviation || 0)
 
     (50..90).step(10).each do |i|
       value = stats.value_from_percentile(i)
@@ -221,7 +221,7 @@ class ProfileCommand < Ticket::Command
 
   def autocomplete
     lastargs = [ARGV.last, ARGV[-2]]
-    if (lastargs.include?('-t') || lastargs.include?('--type')) && !LOG_TYPES.include?(ARGV.last)
+    if (lastargs.include?("-t") || lastargs.include?("--type")) && !LOG_TYPES.include?(ARGV.last)
       opts = LOG_TYPES.dup
     else
       opts = %w[--type --filter --summary --detailed --accumulator --unit_time --help]
@@ -235,16 +235,16 @@ class ProfileCommand < Ticket::Command
   private
 
   def date_glob(date, time_divider, granularity)
-    d = time_divider.nil? ? date : date.sub(time_divider, ' ')
+    d = time_divider.nil? ? date : date.sub(time_divider, " ")
     dt = DateTime.parse(d)
 
     case granularity
     when :hour
-      dt.strftime('%F %H')
+      dt.strftime("%F %H")
     when :minute, :second_avg
-      dt.strftime('%F %R')
+      dt.strftime("%F %R")
     else
-      dt.strftime('%F %T')
+      dt.strftime("%F %T")
     end
   end
 
@@ -260,7 +260,7 @@ class ProfileCommand < Ticket::Command
     timestamps.each do |timestamp|
       requests_per_unit = requests[timestamp]
       printf "%s %6d #{units_label} [%-80s]\n", timestamp, requests_per_unit,
-             '#' * (requests_per_unit.abs * 80 / largest_requests_per_unit)
+             "#" * (requests_per_unit.abs * 80 / largest_requests_per_unit)
     end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'helpers/ticket/profile'
+require "helpers/ticket/profile"
 
 module Ticket
   module Profile
@@ -12,31 +12,31 @@ module Ticket
 
         add_request_size(log_parts[:request_size])
 
-        add_stat('agents', log_parts[:agent])
-        add_stat('status', log_parts[:status])
+        add_stat("agents", log_parts[:agent])
+        add_stat("status", log_parts[:status])
         if detailed?
-          add_stat('methods_status', log_parts[:method], log_parts[:status])
-          add_stat('endpoints_status', log_parts[:endpoint], log_parts[:status])
+          add_stat("methods_status", log_parts[:method], log_parts[:status])
+          add_stat("endpoints_status", log_parts[:endpoint], log_parts[:status])
         else
-          add_stat('methods', log_parts[:method])
-          add_stat('endpoints', log_parts[:endpoint])
+          add_stat("methods", log_parts[:method])
+          add_stat("endpoints", log_parts[:endpoint])
         end
       end
 
       def display
-        puts '' # left blank intentionally
-        puts 'Showing request stats for automate-load-balancer only'.green
-        puts '-' * 80
+        puts "" # left blank intentionally
+        puts "Showing request stats for automate-load-balancer only".green
+        puts "-" * 80
 
-        summarize 'HTTP Status', stats, 'status'
+        summarize "HTTP Status", stats, "status"
         if detailed?
-          summarize_multi 'HTTP Method', stats, 'methods_status'
-          summarize_multi 'HTTP Endpoints', stats, 'endpoints_status'
+          summarize_multi "HTTP Method", stats, "methods_status"
+          summarize_multi "HTTP Endpoints", stats, "endpoints_status"
         else
-          summarize 'HTTP Method', stats, 'methods'
-          summarize 'HTTP Endpoints', stats, 'endpoints'
+          summarize "HTTP Method", stats, "methods"
+          summarize "HTTP Endpoints", stats, "endpoints"
         end
-        summarize 'Agents', stats, 'agents'
+        summarize "Agents", stats, "agents"
         summarize_request_size
       end
 
@@ -45,13 +45,13 @@ module Ticket
       def request_components(line)
         log_parts = split(line)
 
-        method, path, http_version = log_parts[8].split(' ')
+        method, path, http_version = log_parts[8].split(" ")
 
         if path.nil?
-          endpoint = 'unknown'
+          endpoint = "unknown"
         else
-          uri = URI(File.join('http://localhost', path))
-          path_parts = uri.path.split('/')
+          uri = URI(File.join("http://localhost", path))
+          path_parts = uri.path.split("/")
           path_parts.shift
           endpoint = path_parts.first
         end
@@ -64,7 +64,7 @@ module Ticket
           path: path,
           endpoint: endpoint,
           http_version: http_version,
-          agent: log_parts[13].split(' ')[0..1].join(' '),
+          agent: log_parts[13].split(" ")[0..1].join(" "),
           client_name: log_parts[12],
           request_size: log_parts[17].to_i
         }
