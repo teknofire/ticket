@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 require "tty-prompt"
-require 'zendesk_api'
+require "zendesk_api"
 
 module CommonHelpers
   def prompt
@@ -39,7 +41,7 @@ module CommonHelpers
       config.raise_error_when_rate_limited = false
 
       # Logger prints to STDERR by default, to e.g. print to stdout:
-      require 'logger'
+      require "logger"
       config.logger = Logger.new(File.expand_path(Ticket.config.logfile))
 
       # Changes Faraday adapter

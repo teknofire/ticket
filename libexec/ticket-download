@@ -1,22 +1,23 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket download TICKET_ID
 # Summary: Downloads all attachments from a ticket
 # Provide ticket completions
 # Built-in help
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'helpers/ticket'
-require 'helpers/actions'
+require "helpers/ticket"
+require "helpers/actions"
 
 Clamp.allow_options_after_parameters = true
 class DownloadCommand < Ticket::Command
-  option '--complete', :flag, 'autocomplete output', hidden: true
-  option '--verbose', :flag, 'verbose output'
-  option '--force', :flag, 'force redownload of files'
+  option "--complete", :flag, "autocomplete output", hidden: true
+  option "--verbose", :flag, "verbose output"
+  option "--force", :flag, "force redownload of files"
 
-  parameter '[TICKET_ID]', 'ticket_id', attribute_name: :ticket_id
+  parameter "[TICKET_ID]", "ticket_id", attribute_name: :ticket_id
 
   def execute
     return autocomplete if complete?
@@ -25,9 +26,9 @@ class DownloadCommand < Ticket::Command
 
     if !ticket_id.nil? && ticket.id != ticket_id
       signal_usage_error <<~EOH
-      The specified ticket id does not match the one for the current directory,
-             either remove the current ticket id from the command or switch to
-             another directory.
+        The specified ticket id does not match the one for the current directory,
+               either remove the current ticket id from the command or switch to
+               another directory.
       EOH
     end
 
@@ -37,7 +38,7 @@ class DownloadCommand < Ticket::Command
   end
 
   def autocomplete
-    opts = %w{ --help }
+    opts = %w[--help]
 
     puts opts.join("\n")
     exit

@@ -1,4 +1,6 @@
-require 'tty-config'
+# frozen_string_literal: true
+
+require "tty-config"
 
 module Ticket
   def self.config
@@ -10,40 +12,48 @@ module Ticket
 
     def initialize
       @config = TTY::Config.new
-      @config.filename = 'ticket'
-      @config.extname = '.toml'
+      @config.filename = "ticket"
+      @config.extname = ".toml"
       @config.append_path Dir.pwd
-      @config.append_path File.join(Dir.home, '.support')
+      @config.append_path File.join(Dir.home, ".support")
       @config.read
     end
 
     def ticket_path
       # support old config option with TICKET_ROOT env var
-      File.expand_path(ENV['TICKET_ROOT'] || @config.fetch('ticket_path') || File.join(ENV['HOME'], 'support'))
+      File.expand_path(ENV["TICKET_ROOT"] || @config.fetch("ticket_path") || File.join(ENV["HOME"], "support"))
     end
 
     def zendesk_url
-      @config.fetch('zendesk_url')
+      @config.fetch("zendesk_url")
     end
 
     def zendesk_user
-      @config.fetch('zendesk_user')
+      @config.fetch("zendesk_user")
     end
 
     def zendesk_token
-      @config.fetch('zendesk_token')
+      @config.fetch("zendesk_token")
+    end
+
+    def zendesk?
+      zendesk_url && zendesk_user && zendesk_token
     end
 
     def logfile
-      @config.fetch('logfile')
+      @config.fetch("logfile")
     end
 
     def autodownload?
-      !!@config.fetch('autodownload')
+      !!@config.fetch("autodownload")
     end
 
     def open_browser?
-      !!@config.fetch('open_browser')
+      !!@config.fetch("open_browser")
+    end
+
+    def skip_new?
+      !!@config.fetch("skip_new")
     end
   end
 end

@@ -1,26 +1,27 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket new
 # Summary: Create new workspace for a ticket
 # Provide ticket completions
 # Built-in help
 
-$LOAD_PATH.unshift File.join(ENV['_TICKET_ROOT'], 'share/ticket')
+$LOAD_PATH.unshift File.join(ENV["_TICKET_ROOT"], "share/ticket")
 
-require 'clamp'
-require 'fileutils'
-require 'json'
+require "clamp"
+require "fileutils"
+require "json"
 
-require 'helpers/ticket'
+require "helpers/ticket"
 
 class NewCommand < Ticket::Command
-  option '--complete', :flag, 'autocomplete output', hidden: true
-  option '--[no-]open', :flag, 'Open ticket after workspace is created', environment_variable: "TICKET_NEW_OPEN", default: true
-  option '--[no-]download', :flag, 'Download files when opening ticket', default: Ticket.config.autodownload?
-  option '--verbose', :flag, 'verbose output'
+  option "--complete", :flag, "autocomplete output", hidden: true
+  option "--[no-]open", :flag, "Open ticket after workspace is created", environment_variable: "TICKET_NEW_OPEN", default: true
+  option "--[no-]download", :flag, "Download files when opening ticket", default: Ticket.config.autodownload?
+  option "--verbose", :flag, "verbose output"
 
-  parameter '[CLIENT]', 'client name', :attribute_name => :client
-  parameter '[TICKET_ID]', 'ticket id', :attribute_name => :ticket_id
+  parameter "[CLIENT]", "client name", attribute_name: :client
+  parameter "[TICKET_ID]", "ticket id", attribute_name: :ticket_id
 
   def execute
     return autocomplete if complete?
@@ -32,8 +33,8 @@ class NewCommand < Ticket::Command
     @ticket.save
 
     options = []
-    options << '--download' if download?
-    options << '--verbose' if verbose?
+    options << "--download" if download?
+    options << "--verbose" if verbose?
 
     system("ticket open #{ticket_id} #{options.join(' ')}") if open?
   end

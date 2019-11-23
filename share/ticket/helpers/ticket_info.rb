@@ -1,9 +1,11 @@
-require 'json'
-require 'fileutils'
+# frozen_string_literal: true
+
+require "json"
+require "fileutils"
 
 module TicketInfo
   def root
-    ENV['TICKET_ROOT'] || File.join(ENV['HOME'], 'support')
+    ENV["TICKET_ROOT"] || File.join(ENV["HOME"], "support")
   end
 
   def find_ticket(id)
@@ -11,24 +13,25 @@ module TicketInfo
   end
 
   def read_ticket_info(filename)
-    return unless File.exists?(filename)
+    return unless File.exist?(filename)
+
     JSON.parse(File.read(filename))
   end
 
   def find_local_ticket_info
-    %w{ ticket.info ../ticket.info }.each do |file|
-      return file if File.exists?(File.expand_path(file))
+    %w[ticket.info ../ticket.info].each do |file|
+      return file if File.exist?(File.expand_path(file))
     end
-    return nil
+    nil
   end
 
   def full_ticket_info_path(client, id)
-    File.join(root, client, id, 'ticket.info')
+    File.join(root, client, id, "ticket.info")
   end
 
   def ticket_info_path(id)
-    path = File.join(linked_ticket_path, id, 'ticket.info')
-    if File.exists?(path)
+    path = File.join(linked_ticket_path, id, "ticket.info")
+    if File.exist?(path)
       File.realpath(path)
     else
       path
@@ -36,7 +39,7 @@ module TicketInfo
   end
 
   def linked_ticket_path(ticket_id = nil)
-    params = [root, '.tickets']
+    params = [root, ".tickets"]
     FileUtils.mkdir_p File.join(params)
 
     params << ticket_id if ticket_id
@@ -52,14 +55,14 @@ module TicketInfo
   end
 
   def client_list
-    Dir.entries(root).reject { |file| file[0] == '.' }
+    Dir.entries(root).reject { |file| file[0] == "." }
   end
 
   def all_ticket_ids
-    Dir.entries(linked_ticket_path).reject { |file| file[0] == '.' }
+    Dir.entries(linked_ticket_path).reject { |file| file[0] == "." }
   end
 
   def ticket_ids(client)
-    Dir.entries(File.join(root, client)).reject { |file| file[0] == '.' }
+    Dir.entries(File.join(root, client)).reject { |file| file[0] == "." }
   end
 end

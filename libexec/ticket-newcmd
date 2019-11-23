@@ -1,26 +1,27 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket newcmd <command name>
 # Summary: Create a new ticket command
 # Built-in help
 
-require 'trollop'
-require 'colorize'
-require 'colorized_string'
-require 'erb'
-require 'fileutils'
+require "trollop"
+require "colorize"
+require "colorized_string"
+require "erb"
+require "fileutils"
 
-opts = Trollop::options do
-  opt :type, 'Create new ruby command', default: 'ruby'
-  opt 'dont-open', "Don\'t open the new command in #{ENV['EDITOR'] || 'no editor defined'}"
+opts = Trollop.options do
+  opt :type, "Create new ruby command", default: "ruby"
+  opt "dont-open", "Don\'t open the new command in #{ENV['EDITOR'] || 'no editor defined'}"
   opt :complete
 end
 
 # Provide ticket completions
 if opts[:complete]
-  puts '--type'
-  puts '--dont-open'
-  puts '--help'
+  puts "--type"
+  puts "--dont-open"
+  puts "--help"
   exit
 end
 
@@ -37,26 +38,24 @@ class CmdTemplate
 end
 
 name = ARGV.shift
-template = File.join(ENV['_TICKET_ROOT'], 'share/ticket/cmd_templates', "#{opts[:type]}_command.erb")
+template = File.join(ENV["_TICKET_ROOT"], "share/ticket/cmd_templates", "#{opts[:type]}_command.erb")
 
-unless File.exists?(template)
+unless File.exist?(template)
   puts "» Unknown command type: #{opts[:type]}".red
   exit 1
 end
 
-output = File.join(ENV['_TICKET_ROOT'], 'libexec', "ticket-#{name}")
+output = File.join(ENV["_TICKET_ROOT"], "libexec", "ticket-#{name}")
 
-if File.exists?(output)
+if File.exist?(output)
   puts "» Error: #{name} command already exists".red
   exit 1
 end
 
 cmd = CmdTemplate.new(name, template)
-File.open(output, 'w') do |fp|
+File.open(output, "w") do |fp|
   fp << cmd.build(output)
 end
-FileUtils.chmod 0755, output
+FileUtils.chmod 0o755, output
 
-unless opts['dont-open']
-  system([ENV['EDITOR'], output].join(' '))
-end
+system([ENV["EDITOR"], output].join(" ")) unless opts["dont-open"]
