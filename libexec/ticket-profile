@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket profile
 # Summary: Returns req/sec for the given log file
 # Provide ticket completions
@@ -15,7 +16,7 @@ require 'descriptive-statistics'
 require 'filesize'
 
 class ProfileCommand < Ticket::Command
-  LOG_TYPES = %w{ solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview a2 }
+  LOG_TYPES = %w[solr expander hab_nginx nginx nginx2 erchef_requests rabbitmq_overview a2].freeze
   DATETIME_FORMATS = {
     solr: {
       match: '^(.+?)\.\d+\s',
@@ -49,7 +50,7 @@ class ProfileCommand < Ticket::Command
       match: '\[(\d{2}\/.+?)\]\s*(.+)',
       divider: ':'
     }
-  }
+  }.freeze
 
   option '--complete', :flag, 'autocomplete output', hidden: true
   option ['-m', '--minute'], :flag, 'show requests/minute'
@@ -66,11 +67,13 @@ class ProfileCommand < Ticket::Command
 
   option ['-t', '--type'], 'log_type', "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
     unless complete?
-      raise ArgumentError.new("Invalid log type specified '#{s}'") unless s.nil? or LOG_TYPES.include?(s)
+      unless s.nil? || LOG_TYPES.include?(s)
+        raise ArgumentError, "Invalid log type specified '#{s}'"
+      end
     end
     s
   end
-  parameter '[FILE] ...', 'files', :attribute_name => :files
+  parameter '[FILE] ...', 'files', attribute_name: :files
 
   def record_details(line)
     @stats ||= {}
@@ -84,16 +87,18 @@ class ProfileCommand < Ticket::Command
     end
   end
 
-  def nginx_details(profile, line)
-  end
+  def nginx_details(profile, line); end
 
   def display_details
-    @profile.display unless @profile.nil?
+    @profile&.display
   end
 
   def execute
     return autocomplete if complete?
-    signal_usage_error "Please specify a file to profile" if files.nil? || files.empty?
+
+    if files.nil? || files.empty?
+      signal_usage_error 'Please specify a file to profile'
+    end
 
     granularity = :second
     units_label = 'r/s'
@@ -133,15 +138,13 @@ class ProfileCommand < Ticket::Command
 
     case log_type
     when 'solr', 'expander'
-      if log_filter.nil? && log_type == 'expander'
-        log_filter = 'indexed'
-      end
+      log_filter = 'indexed' if log_filter.nil? && log_type == 'expander'
     when 'rabbitmq_overview'
-      if accumulator?
-        units_label = 'Δ msgs'
-      else
-        units_label = 'msgs'
-      end
+      units_label = if accumulator?
+                      'Δ msgs'
+                    else
+                      'msgs'
+                    end
       units_label += '/s' if units > 1
     end
 
@@ -156,13 +159,13 @@ class ProfileCommand < Ticket::Command
         next if results.nil?
 
         value = if jq_value.nil?
-          1
-        else
-          json = results[2]
-          cmd = "echo '#{json}' | jq -r '#{jq_value}'"
-          shellout = Mixlib::ShellOut.new(*cmd)
-          shellout.run_command
-          shellout.stdout.to_i
+                  1
+                else
+                  json = results[2]
+                  cmd = "echo '#{json}' | jq -r '#{jq_value}'"
+                  shellout = Mixlib::ShellOut.new(*cmd)
+                  shellout.run_command
+                  shellout.stdout.to_i
         end
         value = accumulate(value) if accumulator?
         # puts 'foo' if requests.nil?
@@ -184,21 +187,25 @@ class ProfileCommand < Ticket::Command
 
     puts "\nGeneral Request Stats".green
     puts '-' * 80
-    puts format_dates % ['First time', times.first]
-    puts format_dates % ['Last time', times.last]
-    puts format % ['Min value', stats.min]
-    puts format % ['Max value', stats.max]
-    puts format % ['Mean value', stats.mean]
-    puts format_float % ['STD Deviation', stats.standard_deviation]
+    puts format(format_dates, 'First time', times.first)
+    puts format(format_dates, 'Last time', times.last)
+    puts format(format, 'Min value', stats.min || 0)
+    puts format(format, 'Max value', stats.max || 0)
+    puts format(format, 'Mean value', stats.mean || 0)
+    puts format(format_float, 'STD Deviation', stats.standard_deviation || 0)
+
     (50..90).step(10).each do |i|
       value = stats.value_from_percentile(i)
       next if value.nil?
-      puts format % ["#{i}th percentile", value]
+
+      puts format(format, "#{i}th percentile", value)
     end
+
     (98..99).each do |i|
       value = stats.value_from_percentile(i)
       next if value.nil?
-      puts format % ["#{i}th percentile", value]
+
+      puts format(format, "#{i}th percentile", value)
     end
   end
 
@@ -217,7 +224,7 @@ class ProfileCommand < Ticket::Command
     if (lastargs.include?('-t') || lastargs.include?('--type')) && !LOG_TYPES.include?(ARGV.last)
       opts = LOG_TYPES.dup
     else
-      opts = %w{ --type --filter --summary --detailed --accumulator --unit_time --help }
+      opts = %w[--type --filter --summary --detailed --accumulator --unit_time --help]
       # opts += Dir.glob('*')
     end
     opts -= ARGV
@@ -241,12 +248,12 @@ class ProfileCommand < Ticket::Command
     end
   end
 
-  def print_chart(requests, granularity, units_label)
+  def print_chart(requests, _granularity, units_label)
     largest_requests_per_unit = requests.values.max
     timestamps = requests.keys.sort do |a, b|
       begin
         a <=> b
-      rescue
+      rescue StandardError
         raise "Invalid date: #{a} or #{b}, if you are using `-t nginx` try `-t nginx2`"
       end
     end

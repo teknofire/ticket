@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket cleanup
 # Summary: Clean up local ticket info for solved/closed tickets
 # Provide ticket completions
@@ -30,12 +31,14 @@ class CleanCommand < Ticket::Command
     client = nil if client == 'all'
     tickets = Ticket::Info.all(client)
 
-    tickets.reject! do |ticket|
-      !['closed', 'solved'].include?(ticket.status)
-    end unless any?
+    unless any?
+      tickets.select! do |ticket|
+        %w[closed solved].include?(ticket.status)
+      end
+    end
 
     if tickets.empty?
-      prompt.say "No tickets to clean up"
+      prompt.say 'No tickets to clean up'
       return
     end
 
@@ -46,14 +49,16 @@ class CleanCommand < Ticket::Command
         puts 'Found the following closed tickets'.green
       end
 
-      format = "%-15s %-6s %s"
+      format = '%-15s %-6s %s'
       puts # intentionally blank
-      puts format % ['Client', 'ID', 'Status']
+      puts format(format, 'Client', 'ID', 'Status')
       puts '-' * 40
-      tickets.each { |t| puts format % [t.client.capitalize,t.id,t.status] }
+      tickets.each { |t| puts format(format, t.client.capitalize, t.id, t.status) }
       puts '-' * 40
 
-      return unless prompt.yes?("Are you sure you want to delete the above tickets?")
+      unless prompt.yes?('Are you sure you want to delete the above tickets?')
+        return
+      end
     end
 
     tickets.each do |ticket|
@@ -63,10 +68,10 @@ class CleanCommand < Ticket::Command
 
   def cleanup_client_directories
     # clean up any empty client directories
-    clients = Ticket::Info.clients.reject { |c| !Ticket::Info.empty?(c) }
+    clients = Ticket::Info.clients.select { |c| Ticket::Info.empty?(c) }
     return if clients.empty?
 
-    prompt.say "Cleaning up empty client directories"
+    prompt.say 'Cleaning up empty client directories'
 
     clients.each do |c|
       path = Ticket::Info.client_path(c)
@@ -74,11 +79,11 @@ class CleanCommand < Ticket::Command
       FileUtils.rmdir(path)
     end
 
-    prompt.say "Finished cleaning client directories".green
+    prompt.say 'Finished cleaning client directories'.green
   end
 
   def autocomplete
-    opts = %w{ --help }
+    opts = %w[--help]
 
     puts opts.join("\n")
     exit

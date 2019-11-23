@@ -1,4 +1,6 @@
-require "tty-prompt"
+# frozen_string_literal: true
+
+require 'tty-prompt'
 require 'zendesk_api'
 
 module CommonHelpers

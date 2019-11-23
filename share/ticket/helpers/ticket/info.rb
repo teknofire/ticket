@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'fileutils'
 require 'helpers/ticket/config'
 require 'helpers/actions'
@@ -16,9 +18,7 @@ module Ticket
         file = self.class.info_file_path(id)
       end
 
-      unless client.nil?
-        @client = client
-      end
+      @client = client unless client.nil?
 
       if File.exist?(file)
         @info = JSON.parse(File.read(file))
@@ -30,10 +30,10 @@ module Ticket
     end
 
     def find_local_ticket_info
-      %w{ ticket.info ../ticket.info }.each do |file|
-        return file if File.exists?(File.expand_path(file))
+      %w[ticket.info ../ticket.info].each do |file|
+        return file if File.exist?(File.expand_path(file))
       end
-      return nil
+      nil
     end
 
     def url
@@ -86,14 +86,14 @@ module Ticket
     end
 
     def save
-      puts full_path.inspect
       FileUtils.mkdir_p(full_path)
 
       return unless File.directory?(full_path)
+
       FileUtils.ln_sf(full_path, symlink)
 
       File.open(info_file_path, 'w') do |fp|
-        fp << JSON.pretty_generate({ id: id, client: client })
+        fp << JSON.pretty_generate(id: id, client: client)
       end
     end
 
@@ -112,7 +112,7 @@ module Ticket
 
       def path(id)
         dir = ticket_symlink(id)
-        if File.exists?(dir)
+        if File.exist?(dir)
           File.realpath(dir)
         else
           dir
@@ -120,12 +120,12 @@ module Ticket
       end
 
       def exists?(id)
-        File.exists?(info_file_path(id))
+        File.exist?(info_file_path(id))
       end
 
       def info_file_path(id)
         path = File.join(path(id), 'ticket.info')
-        if File.exists?(path)
+        if File.exist?(path)
           File.realpath(path)
         else
           path

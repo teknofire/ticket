@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket tar
 # Summary: Describe tar command here
 # Provide ticket completions
@@ -10,7 +11,7 @@ require 'clamp'
 require 'helpers/ticket_info'
 
 class TarListCommand < Clamp::Command
-  parameter "FILE", "File to list contents of", attribute_name: :file
+  parameter 'FILE', 'File to list contents of', attribute_name: :file
   def execute
     puts "Listing contents of #{file}"
 
@@ -25,19 +26,19 @@ end
 class TarViewCommand < Clamp::Command
   option '--viewer', 'VIEWER', 'Viewer to use', default: 'less'
 
-  parameter "TARFILE", "Tar file to view the contents from", attribute_name: :tarfile
-  parameter "FILE", "File in the tar to view the contents of", attribute_name: :file
+  parameter 'TARFILE', 'Tar file to view the contents from', attribute_name: :tarfile
+  parameter 'FILE', 'File in the tar to view the contents of', attribute_name: :file
 
   def execute
     exec "tar -xOf #{tarfile} #{file}"
   end
 
   def self.autocomplete
-    if ARGV.select.size <= 2 || !File.exists?(ARGV[2])
+    if ARGV.select.size <= 2 || !File.exist?(ARGV[2])
       TarListCommand.autocomplete
     else
       file = ARGV[2]
-      (`tar -tf #{file}`).split("\n") - ARGV
+      `tar -tf #{file}`.split("\n") - ARGV
     end
   end
 end
@@ -50,9 +51,9 @@ class TarCommand < Clamp::Command
     exit(0)
   end
 
-  self.default_subcommand = "list"
-  subcommand ["list", "l"], "list contents of tar", TarListCommand
-  subcommand ["view", "v"], "view contents of file in tar", TarViewCommand
+  self.default_subcommand = 'list'
+  subcommand %w[list l], 'list contents of tar', TarListCommand
+  subcommand %w[view v], 'view contents of file in tar', TarViewCommand
 
   def execute
     # example usage
@@ -64,7 +65,7 @@ class TarCommand < Clamp::Command
   end
 
   def autocomplete
-    opts = %w{ list view --help }
+    opts = %w[list view --help]
 
     if ARGV.include?('list') || ARGV.include?('l')
       opts = TarListCommand.autocomplete

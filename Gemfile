@@ -1,14 +1,16 @@
-source "https://rubygems.org"
+# frozen_string_literal: true
 
-gem 'trollop'
+source 'https://rubygems.org'
+
 gem 'clamp'
+gem 'colorize'
+gem 'descriptive-statistics'
+gem 'faker'
+gem 'filesize'
 gem 'highline'
 gem 'mixlib-shellout'
-gem 'colorize'
-gem 'faker'
-gem 'descriptive-statistics'
-gem 'zendesk_api'
+gem 'toml'
+gem 'trollop'
 gem 'tty-config'
 gem 'tty-prompt'
-gem 'toml'
-gem 'filesize'
+gem 'zendesk_api'

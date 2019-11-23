@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'json'
 require 'fileutils'
 
@@ -11,15 +13,16 @@ module TicketInfo
   end
 
   def read_ticket_info(filename)
-    return unless File.exists?(filename)
+    return unless File.exist?(filename)
+
     JSON.parse(File.read(filename))
   end
 
   def find_local_ticket_info
-    %w{ ticket.info ../ticket.info }.each do |file|
-      return file if File.exists?(File.expand_path(file))
+    %w[ticket.info ../ticket.info].each do |file|
+      return file if File.exist?(File.expand_path(file))
     end
-    return nil
+    nil
   end
 
   def full_ticket_info_path(client, id)
@@ -28,7 +31,7 @@ module TicketInfo
 
   def ticket_info_path(id)
     path = File.join(linked_ticket_path, id, 'ticket.info')
-    if File.exists?(path)
+    if File.exist?(path)
       File.realpath(path)
     else
       path

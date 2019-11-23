@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket open
 # Summary: Open a ticket in browser and terminal shell
 # Provide ticket completions
@@ -23,9 +24,10 @@ class OpenCommand < Clamp::Command
   option '--[no-]shell', :flag, 'Skip launching new shell for ticket', default: true
   option '--[no-]browser', :flag, 'Skip opening ticket in browser', default: Ticket.config.open_browser?
   option '--[no-]download', :flag, 'Download files when opening ticket', default: Ticket.config.autodownload?
+  option '--skip-new', :flag, 'Skip creating new ticket if not found locally', default: Ticket.config.skip_new?
   option '--verbose', :flag, 'verbose output'
 
-  parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
+  parameter '[TICKET_ID]', 'ticket_id', attribute_name: :ticket_id
 
   attr_accessor :ticket
 
@@ -50,6 +52,7 @@ class OpenCommand < Clamp::Command
 
   def download_files
     return unless download?
+
     Ticket::Actions.download(ticket_id, verbose: verbose?)
   end
 
@@ -66,8 +69,20 @@ class OpenCommand < Clamp::Command
     # skip if we are already somewhere in the ticket_path
     return if Dir.pwd.match?(ticket.path)
 
+    unless File.directory?(ticket.path)
+      puts 'Unable to find local ticket info'
+
+      if Ticket.config.zendesk? && !skip_new?
+        org = ticket.zendesk.organization.name.gsub(/\s+/, '')
+        puts "Creating new ticket workspace for #{org}"
+        system("ticket new #{org} #{ticket_id}") if org
+      end
+
+      return
+    end
+
     puts "Launching new #{File.basename(ENV['SHELL']).green} shell in #{ticket.path.green}"
-    puts "Press [CTRL-D] to exit".red
+    puts 'Press [CTRL-D] to exit'.red
 
     Dir.chdir ticket.path
     download_files

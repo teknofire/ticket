@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket delete
 # Summary: Delete local info for given ticket id
 # Provide ticket completions
@@ -22,14 +23,12 @@ class DeleteCommand < Ticket::Command
   option '--complete', :flag, 'autocomplete output', hidden: true
   option ['-y', '--yes'], :flag, 'Confirm all questions with yes'
 
-  parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
+  parameter '[TICKET_ID]', 'ticket_id', attribute_name: :ticket_id
 
   def execute
     return autocomplete if complete?
 
-    if ticket_id.nil?
-      signal_usage_error "Please specify a ticket_id to delete"
-    end
+    signal_usage_error 'Please specify a ticket_id to delete' if ticket_id.nil?
 
     ticket = Ticket::Info.load(ticket_id)
     ticket.delete

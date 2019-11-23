@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket peek
 # Summary: Open browser window for to zendesk ticket
 # Provide ticket completions
@@ -14,7 +15,7 @@ class PeekCommand < Clamp::Command
   include TicketInfo
 
   option '--complete', :flag, 'autocomplete output', hidden: true
-  parameter '[TICKET_ID]', 'ticket_id', :attribute_name => :ticket_id
+  parameter '[TICKET_ID]', 'ticket_id', attribute_name: :ticket_id
 
   def execute
     return autocomplete if complete?

@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket download TICKET_ID
 # Summary: Downloads all attachments from a ticket
 # Provide ticket completions
@@ -25,9 +26,9 @@ class DownloadCommand < Ticket::Command
 
     if !ticket_id.nil? && ticket.id != ticket_id
       signal_usage_error <<~EOH
-      The specified ticket id does not match the one for the current directory,
-             either remove the current ticket id from the command or switch to
-             another directory.
+        The specified ticket id does not match the one for the current directory,
+               either remove the current ticket id from the command or switch to
+               another directory.
       EOH
     end
 
@@ -37,7 +38,7 @@ class DownloadCommand < Ticket::Command
   end
 
   def autocomplete
-    opts = %w{ --help }
+    opts = %w[--help]
 
     puts opts.join("\n")
     exit

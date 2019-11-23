@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'helpers/ticket/profile'
 
 module Ticket
@@ -23,18 +25,18 @@ module Ticket
 
       def display
         puts '' # left blank intentionally
-        puts "Showing request stats for automate-load-balancer only".green
+        puts 'Showing request stats for automate-load-balancer only'.green
         puts '-' * 80
 
-        summarize "HTTP Status", stats, 'status'
+        summarize 'HTTP Status', stats, 'status'
         if detailed?
-          summarize_multi "HTTP Method", stats, 'methods_status'
-          summarize_multi "HTTP Endpoints", stats, 'endpoints_status'
+          summarize_multi 'HTTP Method', stats, 'methods_status'
+          summarize_multi 'HTTP Endpoints', stats, 'endpoints_status'
         else
-          summarize "HTTP Method", stats, 'methods'
-          summarize "HTTP Endpoints", stats, 'endpoints'
+          summarize 'HTTP Method', stats, 'methods'
+          summarize 'HTTP Endpoints', stats, 'endpoints'
         end
-        summarize "Agents", stats, 'agents'
+        summarize 'Agents', stats, 'agents'
         summarize_request_size
       end
 
@@ -48,13 +50,13 @@ module Ticket
         if path.nil?
           endpoint = 'unknown'
         else
-          uri = URI(File.join("http://localhost", path))
+          uri = URI(File.join('http://localhost', path))
           path_parts = uri.path.split('/')
           path_parts.shift
           endpoint = path_parts.first
         end
 
-        return {
+        {
           request: log_parts[8],
           status: log_parts[9],
           request_time: log_parts[16],

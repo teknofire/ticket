@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'tty-config'
 
 module Ticket
@@ -34,6 +36,10 @@ module Ticket
       @config.fetch('zendesk_token')
     end
 
+    def zendesk?
+      zendesk_url && zendesk_user && zendesk_token
+    end
+
     def logfile
       @config.fetch('logfile')
     end
@@ -44,6 +50,10 @@ module Ticket
 
     def open_browser?
       !!@config.fetch('open_browser')
+    end
+
+    def skip_new?
+      !!@config.fetch('skip_new')
     end
   end
 end

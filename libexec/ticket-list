@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket list
 # Summary: List clients or tickets for clients if client is given
 # Provide ticket completions
@@ -16,19 +17,19 @@ class ListCommand < Ticket::Command
   option '--ids', :flag, 'list just ticket ids'
   option ['-q', '--quiet'], :flag, 'less verbose output'
 
-  parameter '[CLIENT]', 'client name', :attribute_name => :client
+  parameter '[CLIENT]', 'client name', attribute_name: :client
 
   def execute
     return autocomplete if complete?
 
     if ids?
-      puts "Listing all ticket ids".green unless quiet?
+      puts 'Listing all ticket ids'.green unless quiet?
       puts Ticket::Info.ids.sort.join("\n")
     elsif client
       puts "Listing ticket numbers for #{client}".green unless quiet?
       puts Ticket::Info.ids(client).sort.join("\n")
     else
-      puts "Listing client".green unless quiet?
+      puts 'Listing client'.green unless quiet?
       puts Ticket::Info.clients.map(&:capitalize).sort.join("\n")
     end
   end

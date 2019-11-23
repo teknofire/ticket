@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
+
 # Usage: ticket combine-files
 # Summary: Tries to detect split ticket files and recombines them
 # Provide ticket completions
@@ -25,11 +26,10 @@ class CombineCommand < Clamp::Command
     Ticket::Actions.combine_files(input_files, force: yes?)
   end
 
-
   def autocomplete
     opts = []
     opts += Dir.glob('*.part*')
-    opts += %w{ --help -y }
+    opts += %w[--help -y]
 
     puts opts.join("\n")
     exit

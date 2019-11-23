@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'helpers/ticket/profile'
 
 module Ticket
@@ -7,7 +9,7 @@ module Ticket
         # puts log_parts.inspect
         log_parts = request_components(line)
 
-        uri = URI(File.join("http://localhost", log_parts[:path]))
+        uri = URI(File.join('http://localhost', log_parts[:path]))
         if uri.path.nil?
           endpoint = 'unknown'
         else
@@ -37,20 +39,20 @@ module Ticket
       end
 
       def display
-        summarize "Orgs", stats, 'orgs'
-        summarize "HTTP Status", stats, 'status'
+        summarize 'Orgs', stats, 'orgs'
+        summarize 'HTTP Status', stats, 'status'
         if detailed?
-          summarize_multi "HTTP Method", stats, 'methods_status'
-          summarize_multi "HTTP Endpoints", stats, 'endpoints_status'
+          summarize_multi 'HTTP Method', stats, 'methods_status'
+          summarize_multi 'HTTP Endpoints', stats, 'endpoints_status'
         else
-          summarize "HTTP Method", stats, 'methods'
-          summarize "HTTP Endpoints", stats, 'endpoints'
+          summarize 'HTTP Method', stats, 'methods'
+          summarize 'HTTP Endpoints', stats, 'endpoints'
         end
-        summarize "Agents", stats, 'agents'
+        summarize 'Agents', stats, 'agents'
         if detailed?
-          summarize_multi "Client Names", stats, 'clients_status'
+          summarize_multi 'Client Names', stats, 'clients_status'
         else
-          summarize "Client Names", stats, 'clients'
+          summarize 'Client Names', stats, 'clients'
         end
         summarize_request_size
       end
@@ -58,7 +60,7 @@ module Ticket
       protected
 
       def split(line)
-        line.scan(/"[^"]+"|\[[^\]]+\]|\S+/).map{ |s| s.delete('"') }.flatten.compact
+        line.scan(/"[^"]+"|\[[^\]]+\]|\S+/).map { |s| s.delete('"') }.flatten.compact
       end
 
       def request_components(line)
@@ -66,7 +68,7 @@ module Ticket
 
         method, path, http_version = log_parts[4].split(' ')
 
-        return {
+        {
           request: log_parts[4],
           status: log_parts[5],
           method: method,
