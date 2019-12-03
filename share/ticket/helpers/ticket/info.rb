@@ -48,12 +48,16 @@ module Ticket
       @zendesk ||= fetch_zendesk_ticket(@id)
     end
 
+    def orgname 
+      client.capitalize unless client.nil?
+    end
+
     def to_s
-      "#{client} - #{id}"
+      "#{orgname} - #{id}"
     end
 
     def summary
-      "#{client.capitalize} - #{id} (#{status})"
+      "#{orgname} - #{id} (#{status})"
     end
 
     def full_path
@@ -95,6 +99,10 @@ module Ticket
       File.open(info_file_path, "w") do |fp|
         fp << JSON.pretty_generate(id: id, client: client)
       end
+    end
+
+    def exists?
+      self.class.exists?(id)
     end
 
     class << self
@@ -144,6 +152,7 @@ module Ticket
       end
 
       def client_path(client)
+        raise "Unable to find organization name cannot be nil" if client.nil?
         File.join(config.ticket_path, client)
       end
 
