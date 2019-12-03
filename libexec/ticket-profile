@@ -65,7 +65,7 @@ class ProfileCommand < Ticket::Command
     Integer(s)
   end
 
-  option ["-t", "--type"], "log_type", "log type to profile, options: [#{LOG_TYPES.join(', ')}]", attribute_name: :log_type do |s|
+  option ["-t", "--type"], "log_type", "log type to profile, options: [#{LOG_TYPES.join(', ')}]", required: true, attribute_name: :log_type do |s|
     unless complete?
       unless s.nil? || LOG_TYPES.include?(s)
         raise ArgumentError, "Invalid log type specified '#{s}'"

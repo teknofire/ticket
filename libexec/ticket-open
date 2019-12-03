@@ -73,7 +73,6 @@ class OpenCommand < Clamp::Command
       puts "Unable to find local ticket info, looking in Zendesk...".yellow
 
       if Ticket.config.zendesk? && !skip_new?
-        puts ticket.zendesk
         if ticket.zendesk.organization.nil? 
           puts "Unable to get organization name from Zendesk, please use `ticket new ORGNAME #{ticket_id}` to open this ticket".red
           return
