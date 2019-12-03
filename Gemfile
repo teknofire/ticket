@@ -14,3 +14,5 @@ gem "trollop"
 gem "tty-config"
 gem "tty-prompt"
 gem "zendesk_api"
+# remote faraday dep once new zendesk_api > 1.22.0 is released
+gem "faraday", '= 0.17.0'

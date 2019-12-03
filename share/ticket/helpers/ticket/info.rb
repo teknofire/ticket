@@ -49,7 +49,7 @@ module Ticket
     end
 
     def to_s
-      "#{client.capitalize} - #{id}"
+      "#{client} - #{id}"
     end
 
     def summary
