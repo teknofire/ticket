@@ -70,10 +70,16 @@ class OpenCommand < Clamp::Command
     return if Dir.pwd.match?(ticket.path)
 
     unless File.directory?(ticket.path)
-      puts "Unable to find local ticket info"
+      puts "Unable to find local ticket info, looking in Zendesk...".yellow
 
       if Ticket.config.zendesk? && !skip_new?
-        org = ticket.zendesk.organization.name.gsub(/\s+/, "")
+        puts ticket.zendesk
+        if ticket.zendesk.organization.nil? 
+          puts "Unable to get organization name from Zendesk, please use `ticket new ORGNAME #{ticket_id}` to open this ticket".red
+          return
+        end
+
+        org = ticket.zendesk.organization.name.gsub(/[^\w]+/, "")
         puts "Creating new ticket workspace for #{org}"
         system("ticket new #{org} #{ticket_id}") if org
       end
