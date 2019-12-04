@@ -8,7 +8,7 @@ GEM
     equatable (0.6.1)
     faker (2.8.0)
       i18n (>= 1.6, < 1.8)
-    faraday (0.17.0)
+    faraday (0.17.1)
       multipart-post (>= 1.2, < 3)
     filesize (0.2.0)
     hashie (3.6.0)
@@ -57,7 +57,7 @@ DEPENDENCIES
   colorize
   descriptive-statistics
   faker
-  faraday (= 0.17.0)
+  faraday (= 0.17.1)
   filesize
   highline
   mixlib-shellout
