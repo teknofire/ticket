@@ -22,7 +22,6 @@ abs_dirname() {
 libexec_path="$(abs_dirname "$0")"
 export _TICKET_ROOT="$(abs_dirname "$libexec_path")"
 export PATH="${libexec_path}:$PATH"
-export BUNDLE_GEMFILE="${libexec_path}/../Gemfile"
 
 command="$1"
 case "$command" in
@@ -37,6 +36,7 @@ case "$command" in
   fi
 
   shift
-  bundle exec "$command_path" "$@"
+  #BUNDLE_GEMFILE="${libexec_path}/../Gemfile" bundle exec "$command_path" "$@"
+  exec "$command_path" "$@"
   ;;
 esac
