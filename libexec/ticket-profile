@@ -236,7 +236,19 @@ class ProfileCommand < Ticket::Command
 
   def date_glob(date, time_divider, granularity)
     d = time_divider.nil? ? date : date.sub(time_divider, " ")
-    dt = DateTime.parse(d)
+    begin
+      dt = DateTime.parse(d)
+    rescue ArgumentError => e
+      puts [
+        "Invalid date: #{d}, if you are using".red, 
+        "`-t nginx`".yellow, "try".red, 
+        "`-t nginx3`".yellow
+      ].join(' ')
+
+      puts "Original error:".red
+      puts e.full_message
+      exit 1
+    end
 
     case granularity
     when :hour
