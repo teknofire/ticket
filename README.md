@@ -97,6 +97,13 @@ Standard Deviation: 8.158455006290227
 --------------------------------------------------------------------------------
 ```
 
+* this next command shows a very useful filter to use when looking for CCRs specifically, as it filters for PUT/POST to the node endpoint
+  it's run from the `~/support/$orgname/$ticketnumber/` directory in this example
+
+```
+23899 ticket profile -t nginx2 -h -M -d -f '(PUT|POST) /organizations/[^\/]+/node' ./ip-10-13-96-54.us-west-2.compute.internal/2019-11-28_02.25.50-UTC/var/log/opscode/nginx/access.log
+```
+
 ## Updates
 
 Once the `ticket` command is available on your system you can update it by running `ticket update`.  This will pull down the latest changes from GitHub and runs the `bundle`.
