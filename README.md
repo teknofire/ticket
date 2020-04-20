@@ -104,6 +104,14 @@ Standard Deviation: 8.158455006290227
 23899 ticket profile -t nginx2 -h -M -d -f '(PUT|POST) /organizations/[^\/]+/node' ./ip-10-13-96-54.us-west-2.compute.internal/2019-11-28_02.25.50-UTC/var/log/opscode/nginx/access.log
 ```
 
+* here's a couple examples for looking at a2 logs - although this is run against someone's full journalctl output, the syntax is the same for a gather-logs bundled journalctl output
+  the first shows hourly statistics and the second shows average r/s in each minute window
+
+```
+ticket profile -t a2 -h -d -x 10 journalctl_2020.04.17-18.05.31_chef-automate.txt
+ticket profile -t a2 -M -d -x 10 journalctl_2020.04.17-18.05.31_chef-automate.txt
+```
+
 ## Updates
 
 Once the `ticket` command is available on your system you can update it by running `ticket update`.  This will pull down the latest changes from GitHub and runs the `bundle`.
