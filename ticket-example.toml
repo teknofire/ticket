@@ -6,3 +6,7 @@ logfile = "~/.support/ticket.log"
 autodownload = false
 open_broswer = false
 ticket_path = "~/support/.ticket"
+# Sendsafely configuration
+sendsafely_url = 'https://secure.chef.io/'
+key_id = 'Obtain from API Keys section under https://secure.chef.io/secure/profile/'
+key_secret = 'Obtain from API Keys section under https://secure.chef.io/secure/profile/'

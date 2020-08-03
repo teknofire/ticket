@@ -55,5 +55,17 @@ module Ticket
     def skip_new?
       !!@config.fetch("skip_new")
     end
+
+    # Sendsafely related configuration
+    def sendsafely_url
+      @config.fetch("sendsafely_url")
+    end
+    def key_id
+      @config.fetch("key_id")
+    end
+    def key_secret
+      @config.fetch("key_secret")
+    end
+
   end
 end
