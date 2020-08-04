@@ -44,7 +44,7 @@ To access the zendesk API you will need to create a config file with the API cre
 
 To use the `ticket download` command you will need to create a config file in `~/.support/ticket.toml`
 
-Download the example [ticket.toml](ticket-example.toml) config and update it with the correct API values. The token is available in LastPass.
+Download the example [ticket.toml](ticket-example.toml) config and update it with the correct API values. The token is available in LastPass. Sendsafely tokens can be obtained directly from Sensdafely.
 
 ##### Supported config options
 
@@ -56,6 +56,9 @@ It's also possible to control by setting an environment variable. I've noted bel
 * __zendesk_url__: URL for customer Zendesk API
 * __zendesk_user__: Email address of Zendesk User
 * __zendesk_token__: Token for API access for Zendesk User
+* __sendsafely_url__: (default: 'https://secure.chef.io/') URL for Sendsafely Dropzone
+* __key_id__: Sendsafely API Key Id, Obtain from API Keys section under https://secure.chef.io/secure/profile/
+* __key_secret__: Sendsafely API Key Secret, Obtain from API Keys section under https://secure.chef.io/secure/profile/
 
 ## Available commands
 

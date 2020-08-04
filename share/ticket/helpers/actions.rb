@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require 'uri'
 require "helpers/ticket"
 require "helpers/ticket/config"
+require 'lib/sendsafely'
 
 module Ticket
   class Actions
@@ -18,7 +20,12 @@ module Ticket
           return
         end
 
+        # Initialize Sendsafely from configuration
+        @sendsafely = Sendsafely.new(Ticket.config, **opts)
+
         zdticket.comments.all do |comment|
+          #
+          # Downloading ticket attachments - old method of sharing links
           comment.attachments.each do |attachment|
             overwrite_message = ""
             download_file = attachment.file_name.gsub(/[\[\]()\s]+/, "_")
@@ -37,6 +44,16 @@ module Ticket
 
             puts "Downloading #{download_file}#{overwrite_message}"
             system "wget #{wget_options.join(' ')} '#{attachment.mapped_content_url}'"
+          end
+
+          #
+          # Check content of comment for SendSafely download links
+          downloads =  URI.extract(comment.body, /https/).filter { |link| link =~ /secure.chef.io\/receive/ }.uniq
+          next if downloads.empty?
+
+          puts "Downloading #{downloads.inspect}" if opts[:verbose]
+          downloads.each do |link|
+            @sendsafely.download_package(link)
           end
         end
       end
