@@ -12,10 +12,12 @@ class Sendsafely
 
   API='api/v2.0'
 
-  def initialize(sendsafely_url, key_id, key_secret)
-    @sendsafely_url = sendsafely_url
-    @key_id = key_id
-    @key_secret = key_secret
+  def initialize(config, **opts)
+    @sendsafely_url = config.sendsafely_url
+    @key_id = config.key_id
+    @key_secret = config.key_secret
+    @opts = opts
+
     @parts_dir = "#{Dir.pwd}/parts/"
     Dir.mkdir(@parts_dir) unless Dir.exist?(@parts_dir)
   end
@@ -30,39 +32,39 @@ class Sendsafely
     @info = JSON.parse(output)
     @server_secret = @info['serverSecret']
 
-    #Step 2 - Download File Parts
-    #For each file in the "files" array contained in the Package Information response from Step 1, you will need to do the following:
+    # Step 2 - Download File Parts
+    # For each file in the "files" array contained in the Package Information response from Step 1, you will need to do the following:
 
     @info['files'].each do |file|
+      puts file.inspect if @opts[:verbose]
       file_id = file['fileId']
       filename = file['fileName']
       puts " * Processing '#{filename}', parts(#{file['parts']})"
 
-      #a. Get Download Urls for each File Part
-      #file_id = @info['files'].first['fileId']
+      # a. Get Download Urls for each File Part
       @response = self.download_urls(file_id, @package_code)
       body = JSON.parse(@response.body)
 
 
-      #b. Download and Decrypt File Parts
-      #Each file part will need to be individually downloaded and decrypted using PGP. You will need to use the "Server Secret" (included in the Package Information response from Step 1) and the keycode (Client Secret) in order to compute the required decryption key.
+      # b. Download and Decrypt File Parts
+      # Each file part will need to be individually downloaded and decrypted using PGP.
+      # You will need to use the "Server Secret" (included in the Package Information response from Step 1) and the keycode (Client Secret) in order to compute the required decryption key.
       if body['response'] == 'SUCCESS'
         body['downloadUrls'].each do |download_url|
-          self.download_file_part(file_id, download_url)
-          self.decrypt_file_part(file, @server_secret+@key_code)
+          puts download_url.inspect if @opts[:verbose]
+          response = self.download_file_part(file_id, download_url)
+
+          # Only perform decryption if file had to be downloaded
+          self.decrypt_file_part("#{file_id}-#{download_url['part']}", @server_secret+@key_code) unless response == false
         end
+
+        # c. Re-assemble Decrypted File Parts
+        # The decrypted file parts should be re-assembled in order (sequentially based on the file part number) to construct the decrypted file.
         self.concatenate(file)
       end
-
     end
-
-    #puts info['files'].inspect
-
-
-#c. Re-assemble Decrypted File Parts
-
-#The decrypted file parts should be re-assembled in order (sequentially based on the file part number) to construct the decrypted file. Within your code you can choose to do this in real-time as each file part is decrypted or at the end once all of your file parts are decrypted.
   end
+
 
   def get_package_info(link)
     @thread, @package_code, @key_code = link.scan(/thread=([\w-]+)&packageCode=([\w-]+)#keyCode=([\w-]+)/).first
@@ -109,10 +111,24 @@ class Sendsafely
   end
 
   def download_file_part(file_id, download_url)
-    puts "   * Downloading #{file_id}-#{download_url['part']}"
+    basename = "#{file_id}-#{download_url['part']}"
+    filename = "#{@parts_dir}#{basename}"
+    overwrite_message = ""
+
+
+    if File.exist?(filename)
+      if @opts[:force]
+        overwrite_message = ", overwriting existing file"
+      else
+        puts "   * Skipping #{basename}, already exists..."
+        return false
+      end
+    end
+    puts "   * Downloading #{basename}#{overwrite_message}"
+
     response = Faraday.get download_url['url']
     if response.status == 200
-      File.open("#{@parts_dir}#{file_id}-#{download_url['part']}", 'w') do |file|
+      File.open("#{filename}", 'w') do |file|
         file.write response.body
       end
     end
@@ -127,13 +143,15 @@ class Sendsafely
   #    Passphrase:  Server Secret concatenated with a random 256-bit Client Secret
   #    S2k-count: 65535
   #    Mode: b (62)
-  def decrypt_file_part(file, secret)
-    (1..file['parts']).each do |n|
+  def decrypt_file_part(filename, secret)
+    puts filename.inspect if @opts[:verbose]
+    #(1..file['parts']).each do |n|
 
-      part = "#{@parts_dir}#{file['fileId']}-#{n}"
+      puts "   * Decrypting #{filename}"
+      part = "#{@parts_dir}#{filename}"
 
 
-      cmd = ["gpg","--batch","--yes","--passphrase",secret,"--output","#{@parts_dir}#{file['fileId']}-#{n}.decrypted","--decrypt",part]
+      cmd = ["gpg","--batch","--yes","--passphrase",secret,"--output","#{part}.decrypted","--decrypt",part]
       decrypt_out = shellout(cmd)
 
       results= {
@@ -141,11 +159,10 @@ class Sendsafely
         error: decrypt_out.stderr,
         status: decrypt_out.exitstatus
       }
-    end
+    #end
   end
 
   def concatenate(file)
-    #puts file.inspect
     File.open(file['fileName'], 'w') do |output|
       (1..file['parts']).each do |n|
         part =File.open("#{@parts_dir}#{file['fileId']}-#{n}.decrypted", 'r').read

@@ -21,7 +21,7 @@ module Ticket
         end
 
         # Initialize Sendsafely from configuration
-        @sendsafely = Sendsafely.new(Ticket.config.sendsafely_url, Ticket.config.key_id, Ticket.config.key_secret)
+        @sendsafely = Sendsafely.new(Ticket.config, **opts)
 
         zdticket.comments.all do |comment|
           #
@@ -51,6 +51,7 @@ module Ticket
           downloads =  URI.extract(comment.body, /https/).filter { |link| link =~ /secure.chef.io\/receive/ }.uniq
           next if downloads.empty?
 
+          puts "Downloading #{downloads.inspect}" if opts[:verbose]
           downloads.each do |link|
             @sendsafely.download_package(link)
           end
