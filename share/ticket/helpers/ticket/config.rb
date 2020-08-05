@@ -60,11 +60,25 @@ module Ticket
     def sendsafely_url
       @config.fetch("sendsafely_url")
     end
-    def key_id
-      @config.fetch("key_id")
+    def sendsafely_key_id
+      sendsafely = @config.fetch("sendsafely_key_id")
+      unless sendsafely.nil?
+        return sendsafely
+      else
+        deprecated = @config.fetch("key_id")
+        puts 'WARNING: You\'re using DEPRECATED "key_id" configuration setting in ticket.toml. Please use "sendsafely_key_id" instead.:'
+        return deprecated
+      end
     end
-    def key_secret
-      @config.fetch("key_secret")
+    def sendsafely_key_secret
+      sendsafely = @config.fetch("sendsafely_key_secret")
+      unless sendsafely.nil?
+        return sendsafely
+      else
+        deprecated = @config.fetch("key_secret")
+        puts 'WARNING: You\'re using DEPRECATED "key_secret" configuration setting in ticket.toml. Please use "sendsafely_key_secret" instead.'
+        return deprecated
+      end
     end
 
   end
