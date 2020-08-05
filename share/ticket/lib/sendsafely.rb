@@ -14,8 +14,8 @@ class Sendsafely
 
   def initialize(config, **opts)
     @sendsafely_url = config.sendsafely_url
-    @key_id = config.key_id
-    @key_secret = config.key_secret
+    @sendsafely_key_id = config.sendsafely_key_id
+    @sendsafely_key_secret = config.sendsafely_key_secret
     @opts = opts
 
     @parts_dir = "#{Dir.pwd}/parts/"
@@ -73,9 +73,9 @@ class Sendsafely
     timestamp = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%S+0000")
 
     output = Faraday.new("#{@sendsafely_url}/#{API}/package/#{@thread}", headers: {
-                             'ss-api-key' => @key_id,
+                             'ss-api-key' => @sendsafely_key_id,
                              'ss-request-timestamp' => timestamp,
-                             'ss-request-signature' => OpenSSL::HMAC.hexdigest("SHA256", @key_secret, @key_id+"/#{API}/package/#{@thread}"+timestamp),
+                             'ss-request-signature' => OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{@thread}"+timestamp),
                            }).get.body
   end
 
@@ -88,7 +88,7 @@ class Sendsafely
 
     resp = Faraday.post("#{@sendsafely_url}/#{API}/package/#{@thread}/file/#{file_id}/download-urls/") do |req|
       req.headers['Content-Type'] = 'application/json'
-      req.headers['ss-api-key'] = @key_id
+      req.headers['ss-api-key'] = @sendsafely_key_id
       req.headers['ss-request-timestamp'] = timestamp
 
       req.body = {
@@ -106,7 +106,7 @@ class Sendsafely
         # NOTE: Up to 25 download URLS for each file can be obtained at once. You can use the startSegment parameter to tell the server which file part you would like as the starting point for each request. Note that each URL contains a time-stamped authentication token that is only valid for 60 minutes, so in general you should not obtain these URLs until you are ready to use them.
       }.to_json
 
-      req.headers['ss-request-signature'] = OpenSSL::HMAC.hexdigest("SHA256", @key_secret, @key_id+"/#{API}/package/#{@thread}/file/#{file_id}/download-urls/"+timestamp+req.body)
+      req.headers['ss-request-signature'] = OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{@thread}/file/#{file_id}/download-urls/"+timestamp+req.body)
     end
   end
 
@@ -191,9 +191,9 @@ class Sendsafely
 
     req = Net::HTTP::Get.new(uri)
     req['Content-Type'] = 'application/json'
-    req['ss-api-key'] = @key_id
+    req['ss-api-key'] = @sendsafely_key_id
     req['ss-request-timestamp'] = timestamp
-    req['ss-request-signature'] = OpenSSL::HMAC.hexdigest("SHA256", @key_secret, @key_id+"/#{API}/package/#{thread}"+timestamp)
+    req['ss-request-signature'] = OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{thread}"+timestamp)
 
     res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) {|http|
       http.request(req)
