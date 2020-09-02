@@ -56,7 +56,7 @@ It's also possible to control by setting an environment variable. I've noted bel
 * __zendesk_url__: URL for customer Zendesk API
 * __zendesk_user__: Email address of Zendesk User
 * __zendesk_token__: Token for API access for Zendesk User
-* __sendsafely_url__: (default: "https://secure.chef.io/") URL for Sendsafely Dropzone
+* __sendsafely_url__: URL for Sendsafely Dropzone
 * __sendsafely_key_id__: Sendsafely API Key Id, Obtain from API Keys section under https://secure.chef.io/secure/profile/
 * __sendsafely_key_secret__: Sendsafely API Key Secret, Obtain from API Keys section under https://secure.chef.io/secure/profile/
 
