@@ -1,0 +1,22 @@
+version: 2
+updates:
+- package-ecosystem: bundler
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: faker
+    versions:
+    - 2.15.1
+    - 2.16.0
+  - dependency-name: tty-prompt
+    versions:
+    - 0.23.0
+  - dependency-name: mixlib-shellout
+    versions:
+    - 3.2.2
+  - dependency-name: zendesk_api
+    versions:
+    - 1.28.0
