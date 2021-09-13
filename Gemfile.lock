@@ -29,12 +29,17 @@ GEM
       concurrent-ruby (~> 1.0)
     inflection (1.0.0)
     mini_mime (1.1.0)
+    mini_portile2 (2.6.1)
     mixlib-shellout (3.2.5)
       chef-utils
     multipart-post (2.1.1)
+    nokogiri (1.12.4)
+      mini_portile2 (~> 2.6.1)
+      racc (~> 1.4)
     parslet (2.0.0)
     pastel (0.8.0)
       tty-color (~> 0.5)
+    racc (1.5.2)
     ruby2_keywords (0.0.4)
     toml (0.3.0)
       parslet (>= 1.8.0, < 3.0.0)
@@ -69,6 +74,7 @@ DEPENDENCIES
   filesize
   highline
   mixlib-shellout
+  nokogiri
   toml
   trollop
   tty-config
@@ -76,4 +82,4 @@ DEPENDENCIES
   zendesk_api
 
 BUNDLED WITH
-   2.1.4
+   2.2.15

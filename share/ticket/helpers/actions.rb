@@ -5,6 +5,7 @@ require 'uri'
 require "helpers/ticket"
 require "helpers/ticket/config"
 require 'lib/sendsafely'
+require 'nokogiri'
 
 module Ticket
   class Actions
@@ -48,7 +49,7 @@ module Ticket
 
           #
           # Check content of comment for SendSafely download links
-          downloads =  URI.extract(comment.body, /https/).filter { |link| link =~ /secure.chef.io\/receive/ }.uniq
+          downloads = sendsafely_links(comment)
           next if downloads.empty?
 
           puts "Downloading #{downloads.inspect}" if opts[:verbose]
@@ -56,6 +57,23 @@ module Ticket
             @sendsafely.download_package(link)
           end
         end
+      end
+
+      def sendsafely_links(comment)
+        links = extract_html_links(comment.html_body)
+        links += extract_text_links(comment.body)
+
+        links.select { |link| link =~ /secure.chef.io\/receive/ }.uniq
+      end
+
+      def extract_html_links(html)
+        doc = Nokogiri::HTML.parse(html)
+
+        doc.xpath("//a").map { |tag| tag[:href] }.uniq
+      end
+
+      def extract_text_links(text)
+        downloads =  URI.extract(text, /https/).uniq
       end
 
       def combine_files(input_files = nil, **opts)
