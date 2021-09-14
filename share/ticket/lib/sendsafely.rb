@@ -83,12 +83,15 @@ class Sendsafely
     timestamp = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%S+0000")
 
     url = [@sendsafely_url, API, 'package', @thread].join('/')
+    headers = {
+      'ss-api-key' => @sendsafely_key_id,
+      'ss-request-timestamp' => timestamp,
+      'ss-request-signature' => OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{@thread}"+timestamp),
+    }
     puts "DEBUG Request URL: #{url}"
-    req = Faraday.new(url, headers: {
-                             'ss-api-key' => @sendsafely_key_id,
-                             'ss-request-timestamp' => timestamp,
-                             'ss-request-signature' => OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{@thread}"+timestamp),
-                           }).get
+    puts "DEBUG Headers: #{headers}"
+
+    req = Faraday.new(url, headers: headers).get
 
     if req.success?
       JSON.parse(req.body)
