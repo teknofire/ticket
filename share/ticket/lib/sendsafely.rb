@@ -81,11 +81,18 @@ class Sendsafely
 
     timestamp = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%S+0000")
 
-    output = Faraday.new("#{@sendsafely_url}/#{API}/package/#{@thread}", headers: {
+    req = Faraday.new("#{@sendsafely_url}/#{API}/package/#{@thread}", headers: {
                              'ss-api-key' => @sendsafely_key_id,
                              'ss-request-timestamp' => timestamp,
                              'ss-request-signature' => OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{@thread}"+timestamp),
-                           }).get.body
+                           }).get
+
+    if req.success?
+      req.body
+    else
+      puts "Error fetching info from sendsafely"
+      puts "Status: #{req.status}\nBody: #{req.body}"
+    end
   end
 
   # Each file is split into multiple smaller "parts" for faster processing. The number of "parts" associated with each file is included as a property within the files array from Step 1.
