@@ -29,9 +29,15 @@ class Sendsafely
     puts "Fetching files for #{link}"
     # Step 1 - Retrieve Package Information
     @info = self.get_package_info(link)
-    puts "DEBUG: #{info.inspect}"
 
     @server_secret = @info['serverSecret']
+
+    # Check if we got a file list back
+    unless @info.key?('files')
+      puts "DEBUG: #{info.inspect}"
+      puts "No files were found for sendsafely link: #{@info['message']}"
+      return
+    end
 
     # Step 2 - Download File Parts
     # For each file in the "files" array contained in the Package Information response from Step 1, you will need to do the following:
@@ -88,8 +94,8 @@ class Sendsafely
       'ss-request-timestamp' => timestamp,
       'ss-request-signature' => OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{@thread}"+timestamp),
     }
-    puts "DEBUG Request URL: #{url}"
-    puts "DEBUG Headers: #{headers}"
+    #puts "DEBUG Request URL: #{url}"
+    #puts "DEBUG Headers: #{headers}"
 
     req = Faraday.new(url, headers: headers).get
 
