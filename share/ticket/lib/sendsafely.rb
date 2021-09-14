@@ -6,7 +6,7 @@ require 'mixlib/shellout'
 
 class Sendsafely
   attr_reader :thread, :package_code, :key_code
-  
+
   # DEBUG - reading attributes
   attr_reader :info, :response
 
@@ -26,7 +26,7 @@ class Sendsafely
   # Downloading a package
   # https://sendsafely.zendesk.com/hc/en-us/articles/360027599232-SendSafely-REST-API
   def download_package(link)
-
+    puts "Fetching files for #{link}"
     # Step 1 - Retrieve Package Information
     output = self.get_package_info(link)
     @info = JSON.parse(output)
@@ -90,7 +90,7 @@ class Sendsafely
 
   # Each file is split into multiple smaller "parts" for faster processing. The number of "parts" associated with each file is included as a property within the files array from Step 1.
   # Each part has its own URL, which can be obtained from the download-urls endpoint:
-  # 
+  #
   # https://bump.sh/doc/sendsafely-rest-api#operation-post-package-parameter-file-parameter-download-urls
   def download_urls(file_id, package_code, start_segment=1, end_segment=25)
     timestamp = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%S+0000")

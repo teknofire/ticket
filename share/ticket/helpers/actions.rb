@@ -63,7 +63,7 @@ module Ticket
         links = extract_html_links(comment.html_body)
         links += extract_text_links(comment.body)
 
-        links.select { |link| link =~ /secure.chef.io\/receive/ }.uniq
+        links.select { |link| link =~ /secure.chef.io\/receive/ }.uniq.compact
       end
 
       def extract_html_links(html)
