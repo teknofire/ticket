@@ -29,6 +29,8 @@ class Sendsafely
     puts "Fetching files for #{link}"
     # Step 1 - Retrieve Package Information
     output = self.get_package_info(link)
+    puts "DEBUG: #{output}"
+
     @info = JSON.parse(output)
     @server_secret = @info['serverSecret']
 
