@@ -28,10 +28,9 @@ class Sendsafely
   def download_package(link)
     puts "Fetching files for #{link}"
     # Step 1 - Retrieve Package Information
-    output = self.get_package_info(link)
-    puts "DEBUG: #{output}"
+    @info = self.get_package_info(link)
+    puts "DEBUG: #{info.inspect}"
 
-    @info = JSON.parse(output)
     @server_secret = @info['serverSecret']
 
     # Step 2 - Download File Parts
@@ -83,14 +82,16 @@ class Sendsafely
 
     timestamp = Time.now.utc.strftime("%Y-%m-%dT%H:%M:%S+0000")
 
-    req = Faraday.new("#{@sendsafely_url}/#{API}/package/#{@thread}", headers: {
+    url = [@sendsafely_url, API, 'package', @thread].join('/')
+    puts "DEBUG Request URL: #{url}"
+    req = Faraday.new(url, headers: {
                              'ss-api-key' => @sendsafely_key_id,
                              'ss-request-timestamp' => timestamp,
                              'ss-request-signature' => OpenSSL::HMAC.hexdigest("SHA256", @sendsafely_key_secret, @sendsafely_key_id+"/#{API}/package/#{@thread}"+timestamp),
                            }).get
 
     if req.success?
-      req.body
+      JSON.parse(req.body)
     else
       puts "Error fetching info from sendsafely"
       puts "Status: #{req.status}\nBody: #{req.body}"
