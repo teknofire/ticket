@@ -1,8 +1,8 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash
 # encoding: utf-8
 # Usage: ticket update
 # Summary: Updates to the latest ticket command version
-
+set -x
 # Put the rest of the update command here
 cd $_TICKET_ROOT
 git pull
